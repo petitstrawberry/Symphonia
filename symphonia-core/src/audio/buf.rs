@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use std::ops::{Deref, DerefMut, Range, RangeBounds};
+use std::prelude::v1::*;
 
 use smallvec::SmallVec;
 
@@ -90,7 +91,12 @@ impl<S: Sample> AudioBuffer<S> {
 
         planes.resize_with(num_channels, || vec![S::MID; capacity]);
 
-        AudioBuffer { spec, planes, num_frames: 0, capacity }
+        AudioBuffer {
+            spec,
+            planes,
+            num_frames: 0,
+            capacity,
+        }
     }
 
     /// Returns `true` if the `AudioBuffer` is unused.
@@ -152,14 +158,20 @@ impl<S: Sample> AudioBuffer<S> {
         Src: Audio<Sin>,
     {
         // Ensure the audio formats are identical.
-        assert!(self.spec() == src.spec(), "audio specifications are not identical");
+        assert!(
+            self.spec() == src.spec(),
+            "audio specifications are not identical"
+        );
 
         // The number of frames after appending.
         let start = self.num_frames;
         let end = self.num_frames + src.frames();
 
         // Ensure the new length is not greater than the capacity.
-        assert!(end <= self.capacity, "combined length would exceed capacity");
+        assert!(
+            end <= self.capacity,
+            "combined length would exceed capacity"
+        );
 
         for (dst, src) in self.planes.iter_mut().zip(src.iter_planes()) {
             // Dispatch to a common helper function.
@@ -186,7 +198,10 @@ impl<S: Sample> AudioBuffer<S> {
         assert!(new_len <= self.capacity, "new length would exceed capacity");
 
         // The provided frame to repeat must have a sample per frame,
-        assert!(frame.len() == self.planes.len(), "provided frame is too small");
+        assert!(
+            frame.len() == self.planes.len(),
+            "provided frame is too small"
+        );
 
         // Truncates if `new_len` is smaller than `num_frames`.
         self.truncate(new_len);
@@ -275,10 +290,16 @@ impl<S: Sample> AudioBuffer<S> {
         let num_new_frames = num_frames.unwrap_or(self.capacity - self.num_frames);
 
         // Do not render past the end of the audio buffer.
-        assert!(self.num_frames + num_new_frames <= self.capacity(), "capacity will be exceeded");
+        assert!(
+            self.num_frames + num_new_frames <= self.capacity(),
+            "capacity will be exceeded"
+        );
 
         // The provided frame to repeat must have a sample per frame,
-        assert!(frame.len() == self.planes.len(), "provided frame is too small");
+        assert!(
+            frame.len() == self.planes.len(),
+            "provided frame is too small"
+        );
 
         // Render repeated frames.
         for (plane, &s) in self.planes.iter_mut().zip(frame) {
@@ -359,7 +380,10 @@ impl<S: Sample> AudioBuffer<S> {
         let num_new_frames = num_frames.unwrap_or(self.capacity - self.num_frames);
 
         // Do not render past the end of the audio buffer.
-        assert!(self.num_frames + num_new_frames <= self.capacity(), "capacity will be exceeded");
+        assert!(
+            self.num_frames + num_new_frames <= self.capacity(),
+            "capacity will be exceeded"
+        );
 
         // Render silence.
         for plane in &mut self.planes {
@@ -391,7 +415,10 @@ impl<S: Sample> AudioBuffer<S> {
         let num_new_frames = num_frames.unwrap_or(self.capacity - self.num_frames);
 
         // Do not render past the end of the audio buffer.
-        assert!(self.num_frames + num_new_frames <= self.capacity(), "capacity will be exceeded");
+        assert!(
+            self.num_frames + num_new_frames <= self.capacity(),
+            "capacity will be exceeded"
+        );
 
         // Commit new frames.
         self.num_frames += num_new_frames;
@@ -404,8 +431,7 @@ impl<S: Sample> AudioBuffer<S> {
     pub fn shift(&mut self, shift: usize) {
         if shift >= self.num_frames {
             self.clear();
-        }
-        else if shift > 0 {
+        } else if shift > 0 {
             // Shift the samples down in each plane.
             for plane in &mut self.planes {
                 plane.copy_within(shift..self.num_frames, 0);
@@ -478,7 +504,9 @@ impl<S: Sample> Audio<S> for AudioBuffer<S> {
 
 impl<S: Sample> AudioMut<S> for AudioBuffer<S> {
     fn plane_mut(&mut self, idx: usize) -> Option<&mut [S]> {
-        self.planes.get_mut(idx).map(|plane| &mut plane[0..self.num_frames])
+        self.planes
+            .get_mut(idx)
+            .map(|plane| &mut plane[0..self.num_frames])
     }
 
     fn plane_pair_mut(&mut self, idx0: usize, idx1: usize) -> Option<(&mut [S], &mut [S])> {
@@ -553,13 +581,13 @@ impl<S: Sample> std::ops::Index<Position> for AudioBuffer<S> {
     type Output = [S];
 
     fn index(&self, index: Position) -> &Self::Output {
-        self.plane_by_position(index).expect("index out of bounds")
+        self.plane_by_position(index).unwrap()
     }
 }
 
 impl<S: Sample> std::ops::IndexMut<Position> for AudioBuffer<S> {
     fn index_mut(&mut self, index: Position) -> &mut Self::Output {
-        self.plane_by_position_mut(index).expect("index out of bounds")
+        self.plane_by_position_mut(index).unwrap()
     }
 }
 
@@ -567,13 +595,13 @@ impl<S: Sample> std::ops::Index<usize> for AudioBuffer<S> {
     type Output = [S];
 
     fn index(&self, index: usize) -> &Self::Output {
-        self.plane(index).expect("index out of bounds")
+        self.plane(index).unwrap()
     }
 }
 
 impl<S: Sample> std::ops::IndexMut<usize> for AudioBuffer<S> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        self.plane_mut(index).expect("index out of bounds")
+        self.plane_mut(index).unwrap()
     }
 }
 

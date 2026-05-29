@@ -8,6 +8,7 @@
 //! Subtitle decoder specific support.
 
 use std::fmt;
+use std::prelude::v1::*;
 
 #[cfg(feature = "exp-subtitle-codecs")]
 use crate::codecs::CodecInfo;
@@ -71,7 +72,10 @@ pub struct SubtitleCodecParameters {
 
 impl SubtitleCodecParameters {
     pub fn new() -> SubtitleCodecParameters {
-        SubtitleCodecParameters { codec: CODEC_ID_NULL_SUBTITLE, extra_data: None }
+        SubtitleCodecParameters {
+            codec: CODEC_ID_NULL_SUBTITLE,
+            extra_data: None,
+        }
     }
 
     /// Provide the `VideoCodecId`.

@@ -9,6 +9,7 @@
 
 use crate::io::BufReader;
 use crate::units::{Duration, Timestamp};
+use std::prelude::v1::*;
 
 /// A `Packet` contains a discrete amount of encoded data for a single codec bitstream. The exact
 /// amount of data is bounded, but not defined, and is dependant on the container and/or the
@@ -94,7 +95,9 @@ impl Packet {
     /// such, this is a sum of the duration, start trim, and end trim.
     #[inline]
     pub const fn block_dur(&self) -> Duration {
-        self.dur.saturating_add(self.trim_start).saturating_add(self.trim_end)
+        self.dur
+            .saturating_add(self.trim_start)
+            .saturating_add(self.trim_end)
     }
 
     /// Get a `BufReader` to read the packet data buffer sequentially.
@@ -190,7 +193,9 @@ impl<'a> PacketRef<'a> {
     /// Get the duration of all *decoded* frames in the packet in `TimeBase` units.
     #[inline]
     pub const fn block_dur(&self) -> Duration {
-        self.dur.saturating_add(self.trim_start).saturating_add(self.trim_end)
+        self.dur
+            .saturating_add(self.trim_start)
+            .saturating_add(self.trim_end)
     }
 
     /// Get a `BufReader` to read the packet data buffer sequentially.
@@ -222,6 +227,8 @@ impl<'a> From<&'a Packet> for PacketRef<'a> {
 }
 
 mod builder {
+    use std::prelude::v1::*;
+
     use crate::packet::{Packet, PacketRef};
     use crate::units::{Duration, Timestamp};
 
@@ -320,7 +327,13 @@ mod builder {
             block_dur: Duration,
             end_pts: Option<Timestamp>,
         ) -> PacketBuilder<T, HasPts, HasDur, B> {
-            let Self { track_id, pts, buf, dts, .. } = self;
+            let Self {
+                track_id,
+                pts,
+                buf,
+                dts,
+                ..
+            } = self;
 
             // All frames with a negative PTS must be trimmed first. This duration may exceed the
             // number of decoded frames.
@@ -337,24 +350,58 @@ mod builder {
                 }
             }
 
-            let dur = block_dur.saturating_sub(self.trim_start).saturating_sub(self.trim_end);
+            let dur = block_dur
+                .saturating_sub(self.trim_start)
+                .saturating_sub(self.trim_end);
 
-            PacketBuilder { track_id, pts, dur: HasDur(dur), buf, dts, trim_start, trim_end }
+            PacketBuilder {
+                track_id,
+                pts,
+                dur: HasDur(dur),
+                buf,
+                dts,
+                trim_start,
+                trim_end,
+            }
         }
     }
 
     impl<T, P, B> PacketBuilder<T, P, NoDur, B> {
         /// Provide the packet's duration including delay and padding frames.
         pub fn dur(self, dur: Duration) -> PacketBuilder<T, P, HasDur, B> {
-            let Self { track_id, pts, buf, dts, trim_start, trim_end, .. } = self;
-            PacketBuilder { track_id, pts, dur: HasDur(dur), buf, dts, trim_start, trim_end }
+            let Self {
+                track_id,
+                pts,
+                buf,
+                dts,
+                trim_start,
+                trim_end,
+                ..
+            } = self;
+            PacketBuilder {
+                track_id,
+                pts,
+                dur: HasDur(dur),
+                buf,
+                dts,
+                trim_start,
+                trim_end,
+            }
         }
     }
 
     impl<T, P, D, B> PacketBuilder<T, P, D, B> {
         /// Provide the track ID.
         pub fn track_id(self, track_id: u32) -> PacketBuilder<HasTrackId, P, D, B> {
-            let Self { pts, dur, buf, dts, trim_start, trim_end, .. } = self;
+            let Self {
+                pts,
+                dur,
+                buf,
+                dts,
+                trim_start,
+                trim_end,
+                ..
+            } = self;
             PacketBuilder {
                 track_id: HasTrackId(track_id),
                 pts,
@@ -368,24 +415,72 @@ mod builder {
 
         /// Provide the presentation timestamp (PTS).
         pub fn pts(self, pts: Timestamp) -> PacketBuilder<T, HasPts, D, B> {
-            let Self { track_id, dur, buf, dts, trim_start, trim_end, .. } = self;
-            PacketBuilder { track_id, pts: HasPts(pts), dur, buf, dts, trim_start, trim_end }
+            let Self {
+                track_id,
+                dur,
+                buf,
+                dts,
+                trim_start,
+                trim_end,
+                ..
+            } = self;
+            PacketBuilder {
+                track_id,
+                pts: HasPts(pts),
+                dur,
+                buf,
+                dts,
+                trim_start,
+                trim_end,
+            }
         }
 
         /// Provide the packet's data buffer.
         ///
         /// When holding an owned data buffer, an owning `Packet` is built.
         pub fn data(self, buf: impl Into<Box<[u8]>>) -> PacketBuilder<T, P, D, HasBuf> {
-            let Self { track_id, pts, dur, dts, trim_start, trim_end, .. } = self;
-            PacketBuilder { track_id, pts, dur, buf: HasBuf(buf.into()), dts, trim_start, trim_end }
+            let Self {
+                track_id,
+                pts,
+                dur,
+                dts,
+                trim_start,
+                trim_end,
+                ..
+            } = self;
+            PacketBuilder {
+                track_id,
+                pts,
+                dur,
+                buf: HasBuf(buf.into()),
+                dts,
+                trim_start,
+                trim_end,
+            }
         }
 
         /// Provide the packet's data buffer as a non-owning reference.
         ///
         /// When holding a non-owning data buffer reference, a non-owning `PacketRef` is built.
         pub fn data_by_ref<'a>(self, buf: &'a [u8]) -> PacketBuilder<T, P, D, HasBufRef<'a>> {
-            let Self { track_id, pts, dur, dts, trim_start, trim_end, .. } = self;
-            PacketBuilder { track_id, pts, dur, buf: HasBufRef(buf), dts, trim_start, trim_end }
+            let Self {
+                track_id,
+                pts,
+                dur,
+                dts,
+                trim_start,
+                trim_end,
+                ..
+            } = self;
+            PacketBuilder {
+                track_id,
+                pts,
+                dur,
+                buf: HasBufRef(buf),
+                dts,
+                trim_start,
+                trim_end,
+            }
         }
 
         /// Provide the decode timestamp (DTS).

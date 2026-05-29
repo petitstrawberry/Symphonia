@@ -7,6 +7,7 @@
 
 //! The `video` module provides primitives for working with video.
 
+use std::prelude::v1::*;
 pub struct YuvVideoBuffer {}
 pub struct RgbVideoBuffer {}
 

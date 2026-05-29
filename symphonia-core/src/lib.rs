@@ -5,12 +5,18 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #![forbid(unsafe_code)]
-// The following lints are allowed in all Symphonia crates. Please see clippy.toml for their
-// justification.
+#![no_std]
 #![allow(clippy::comparison_chain)]
 #![allow(clippy::excessive_precision)]
 #![allow(clippy::identity_op)]
 #![allow(clippy::manual_range_contains)]
+#![allow(unused_imports)]
+
+#[macro_use]
+extern crate alloc;
+
+// The following lints are allowed in all Symphonia crates. Please see clippy.toml for their
+// justification.
 
 pub mod audio;
 pub mod checksum;

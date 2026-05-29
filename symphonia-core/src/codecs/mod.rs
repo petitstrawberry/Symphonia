@@ -17,6 +17,7 @@
 //!   audio sample rate).
 
 use std::hash::Hash;
+use std::prelude::v1::*;
 
 pub mod audio;
 pub mod registry;

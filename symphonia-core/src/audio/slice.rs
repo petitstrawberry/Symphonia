@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use std::ops::{Range, RangeBounds};
+use std::prelude::v1::*;
 
 use crate::audio::conv::FromSample;
 use crate::audio::sample::{Sample, SampleBytes};
@@ -24,7 +25,11 @@ pub struct AudioSlice<'a, S: Sample> {
 
 impl<'a, S: Sample> AudioSlice<'a, S> {
     pub(super) fn new(spec: &'a AudioSpec, planes: &'a [Vec<S>], range: Range<usize>) -> Self {
-        AudioSlice { spec, planes, range }
+        AudioSlice {
+            spec,
+            planes,
+            range,
+        }
     }
 
     /// Get an immutable sub-slice of this slice over `range`.
@@ -116,7 +121,7 @@ impl<S: Sample> std::ops::Index<Position> for AudioSlice<'_, S> {
     type Output = [S];
 
     fn index(&self, index: Position) -> &Self::Output {
-        self.plane_by_position(index).expect("index out of bounds")
+        self.plane_by_position(index).unwrap()
     }
 }
 
@@ -124,7 +129,7 @@ impl<S: Sample> std::ops::Index<usize> for AudioSlice<'_, S> {
     type Output = [S];
 
     fn index(&self, index: usize) -> &Self::Output {
-        self.plane(index).expect("index out of bounds")
+        self.plane(index).unwrap()
     }
 }
 
@@ -137,7 +142,11 @@ pub struct AudioSliceMut<'a, S: Sample> {
 
 impl<'a, S: Sample> AudioSliceMut<'a, S> {
     pub(super) fn new(spec: &'a AudioSpec, planes: &'a mut [Vec<S>], range: Range<usize>) -> Self {
-        AudioSliceMut { spec, planes, range }
+        AudioSliceMut {
+            spec,
+            planes,
+            range,
+        }
     }
 
     /// Get an immutable sub-slice of this slice over `range`.
@@ -196,7 +205,9 @@ impl<S: Sample> Audio<S> for AudioSliceMut<'_, S> {
 
 impl<S: Sample> AudioMut<S> for AudioSliceMut<'_, S> {
     fn plane_mut(&mut self, idx: usize) -> Option<&mut [S]> {
-        self.planes.get_mut(idx).map(|plane| &mut plane[self.range.clone()])
+        self.planes
+            .get_mut(idx)
+            .map(|plane| &mut plane[self.range.clone()])
     }
 
     fn plane_pair_mut(&mut self, idx0: usize, idx1: usize) -> Option<(&mut [S], &mut [S])> {
@@ -258,13 +269,13 @@ impl<S: Sample> std::ops::Index<Position> for AudioSliceMut<'_, S> {
     type Output = [S];
 
     fn index(&self, index: Position) -> &Self::Output {
-        self.plane_by_position(index).expect("index out of bounds")
+        self.plane_by_position(index).unwrap()
     }
 }
 
 impl<S: Sample> std::ops::IndexMut<Position> for AudioSliceMut<'_, S> {
     fn index_mut(&mut self, index: Position) -> &mut Self::Output {
-        self.plane_by_position_mut(index).expect("index out of bounds")
+        self.plane_by_position_mut(index).unwrap()
     }
 }
 
@@ -272,12 +283,12 @@ impl<S: Sample> std::ops::Index<usize> for AudioSliceMut<'_, S> {
     type Output = [S];
 
     fn index(&self, index: usize) -> &Self::Output {
-        self.plane(index).expect("index out of bounds")
+        self.plane(index).unwrap()
     }
 }
 
 impl<S: Sample> std::ops::IndexMut<usize> for AudioSliceMut<'_, S> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        self.plane_mut(index).expect("index out of bounds")
+        self.plane_mut(index).unwrap()
     }
 }

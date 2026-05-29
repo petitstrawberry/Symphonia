@@ -11,6 +11,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use std::prelude::v1::*;
 use symphonia_core::errors::Result;
 use symphonia_core::io::ReadBitsLtr;
 
@@ -18,7 +19,11 @@ use crate::aac::common::{MAX_SFBS, MAX_WINDOWS};
 
 #[inline(always)]
 fn iquant(val: f32) -> f32 {
-    if val < 0.0 { -((-val).powf(4.0 / 3.0)) } else { val.powf(4.0 / 3.0) }
+    if val < 0.0 {
+        -((-val).powf(4.0 / 3.0))
+    } else {
+        val.powf(4.0 / 3.0)
+    }
 }
 
 #[inline(always)]
@@ -27,7 +32,11 @@ fn requant(val: f32, scale: f32) -> f32 {
         return 0.0;
     }
     let bval = val / scale;
-    if bval >= 0.0 { val.powf(3.0 / 4.0) } else { -((-val).powf(3.0 / 4.0)) }
+    if bval >= 0.0 {
+        val.powf(3.0 / 4.0)
+    } else {
+        -((-val).powf(3.0 / 4.0))
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -58,7 +67,12 @@ impl Pulse {
             pulse_amp[i] = bs.read_bits_leq32(4)? as u8;
         }
 
-        Ok(Some(Self { number_pulse, pulse_start_sfb, pulse_offset, pulse_amp }))
+        Ok(Some(Self {
+            number_pulse,
+            pulse_start_sfb,
+            pulse_offset,
+            pulse_amp,
+        }))
     }
 
     pub fn synth(
@@ -96,8 +110,7 @@ impl Pulse {
 
             if base > 0.0 {
                 base += f32::from(self.pulse_amp[pno]);
-            }
-            else {
+            } else {
                 base -= f32::from(self.pulse_amp[pno]);
             }
             coeffs[k] = iquant(base) * scale;

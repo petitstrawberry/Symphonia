@@ -9,7 +9,7 @@
 
 use std::collections::HashMap;
 use std::default::Default;
-use std::hash::Hash;
+use std::prelude::v1::*;
 
 use crate::codecs::CodecInfo;
 use crate::codecs::audio::{AudioCodecId, AudioCodecParameters, AudioDecoder, AudioDecoderOptions};
@@ -147,10 +147,13 @@ impl<C, R> Default for InnerCodecRegistry<C, R> {
 
 impl<C, R> InnerCodecRegistry<C, R>
 where
-    C: Hash + std::cmp::Eq,
+    C: Ord,
 {
     fn get(&self, id: &C) -> Option<&R> {
-        self.preferred.get(id).or_else(|| self.standard.get(id)).or_else(|| self.fallback.get(id))
+        self.preferred
+            .get(id)
+            .or_else(|| self.standard.get(id))
+            .or_else(|| self.fallback.get(id))
     }
 
     fn get_at_tier(&self, tier: Tier, id: &C) -> Option<&R> {
@@ -334,8 +337,7 @@ impl CodecRegistry {
     ) -> Result<Box<dyn AudioDecoder>> {
         if let Some(codec) = self.get_audio_decoder(params.codec) {
             Ok((codec.factory)(params, opts)?)
-        }
-        else {
+        } else {
             unsupported_error("core (codec): unsupported audio codec")
         }
     }
@@ -354,8 +356,7 @@ impl CodecRegistry {
     ) -> Result<Box<dyn VideoDecoder>> {
         if let Some(codec) = self.get_video_decoder(params.codec) {
             Ok((codec.factory)(params, opts)?)
-        }
-        else {
+        } else {
             unsupported_error("core (codec): unsupported video codec")
         }
     }
@@ -374,8 +375,7 @@ impl CodecRegistry {
     ) -> Result<Box<dyn SubtitleDecoder>> {
         if let Some(codec) = self.get_subtitle_decoder(params.codec) {
             Ok((codec.factory)(params, opts)?)
-        }
-        else {
+        } else {
             unsupported_error("core (codec): unsupported subtitle codec")
         }
     }

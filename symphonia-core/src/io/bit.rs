@@ -7,6 +7,7 @@
 
 use std::cmp::min;
 use std::io;
+use std::prelude::v1::*;
 
 use crate::io::ReadBytes;
 use crate::util::bits::*;
@@ -17,6 +18,8 @@ fn end_of_bitstream_error<T>() -> io::Result<T> {
 
 pub mod vlc {
     //! The `vlc` module provides support for decoding variable-length codes (VLC).
+
+    use std::prelude::v1::*;
 
     use std::collections::{BTreeMap, VecDeque};
     use std::io;
@@ -136,12 +139,17 @@ pub mod vlc {
         Jump { index: E::IndexType },
         /// A value entry indicates to the decoder that a codeword with the provided length in bits
         /// has been decoded, and it yielded the provided value.
-        Value { value: E::ValueType, code_len: core::num::NonZero<u8> },
+        Value {
+            value: E::ValueType,
+            code_len: core::num::NonZero<u8>,
+        },
     }
 
     impl<E: CodebookEntry> Default for Entry<E> {
         fn default() -> Self {
-            Self::Jump { index: Default::default() }
+            Self::Jump {
+                index: Default::default(),
+            }
         }
     }
 
@@ -191,7 +199,12 @@ pub mod vlc {
 
     impl<E: CodebookEntry> CodebookValue<E> {
         fn new(prefix: u16, width: u8, code_len: NonZero<u8>, value: E::ValueType) -> Self {
-            Self { prefix, width, code_len, value }
+            Self {
+                prefix,
+                width,
+                code_len,
+                value,
+            }
         }
     }
 
@@ -208,7 +221,11 @@ pub mod vlc {
 
     impl<E: CodebookEntry> CodebookBlock<E> {
         fn new(width: u8) -> Self {
-            Self { width, nodes: Default::default(), values: Default::default() }
+            Self {
+                width,
+                nodes: Default::default(),
+                values: Default::default(),
+            }
         }
     }
 
@@ -227,7 +244,10 @@ pub mod vlc {
         /// codebook reads bits in an order different from the order of the provided codewords,
         /// then this option can be used to make them compatible.
         pub fn new(bit_order: BitOrder) -> Self {
-            CodebookBuilder { bits_per_block: 4, bit_order }
+            CodebookBuilder {
+                bits_per_block: 4,
+                bit_order,
+            }
         }
 
         /// Specify the number of bits that should be consumed from the source at a time. This value
@@ -261,9 +281,12 @@ pub mod vlc {
             }
 
             // Traverse the tree in breadth-first order.
-            while let Some(block_id) = queue.pop_front() {
+            while !queue.is_empty() {
                 // Count of the total number of entries added to the table by this block.
                 let mut entry_count = 0;
+
+                // Get the block id at the front of the queue.
+                let block_id = queue.pop_front().unwrap();
 
                 // Get the block at the front of the queue.
                 let block = &blocks[block_id];
@@ -294,9 +317,9 @@ pub mod vlc {
                     // Determine the offset into the table depending on the bit-order.
                     let offset = match bit_order {
                         BitOrder::Verbatim => child_block_prefix,
-                        BitOrder::Reverse => {
-                            child_block_prefix.reverse_bits().rotate_left(u32::from(block.width))
-                        }
+                        BitOrder::Reverse => child_block_prefix
+                            .reverse_bits()
+                            .rotate_left(u32::from(block.width)),
                     } as usize;
 
                     table[table_base + offset] = jump_entry;
@@ -412,8 +435,7 @@ pub mod vlc {
                         // Recurse down the tree.
                         if let Some(&block_id) = blocks[parent_block_id].nodes.get(&prefix) {
                             parent_block_id = block_id;
-                        }
-                        else {
+                        } else {
                             // Add a child block to the parent block.
                             let block_id = blocks.len();
 
@@ -435,7 +457,9 @@ pub mod vlc {
                     let block = &mut blocks[parent_block_id];
 
                     // Push the value.
-                    block.values.push(CodebookValue::new(prefix as u16, len, code_len, value));
+                    block
+                        .values
+                        .push(CodebookValue::new(prefix as u16, len, code_len, value));
 
                     // Update maximum observed codeword length.
                     max_code_len = max_code_len.max(code_len.get());
@@ -512,8 +536,7 @@ pub trait ReadBitsLtr: private::FetchBitsLtr {
     fn ignore_bits(&mut self, mut num_bits: u32) -> io::Result<()> {
         if num_bits <= self.num_bits_left() {
             self.consume_bits(num_bits);
-        }
-        else {
+        } else {
             // Consume whole bit caches directly.
             while num_bits > self.num_bits_left() {
                 num_bits -= self.num_bits_left();
@@ -607,8 +630,7 @@ pub trait ReadBitsLtr: private::FetchBitsLtr {
         // (as oppopsed to 32-bits), this is an acceptable solution.
         if bit_width == 0 {
             Ok(0)
-        }
-        else {
+        } else {
             // Since bit_width is always > 0, this shift operation is always < 64, and will
             // therefore never panic.
             let mut bits = self.get_bits() >> (u64::BITS - bit_width);
@@ -651,8 +673,7 @@ pub trait ReadBitsLtr: private::FetchBitsLtr {
                 // bits were 0.
                 num += self.num_bits_left();
                 self.fetch_bits()?;
-            }
-            else {
+            } else {
                 // Otherwise, a 1 bit was encountered after `n_zeros` 0 bits.
                 num += num_zeros;
 
@@ -685,8 +706,7 @@ pub trait ReadBitsLtr: private::FetchBitsLtr {
                 num += limit;
                 self.consume_bits(limit);
                 break;
-            }
-            else {
+            } else {
                 // There are less ones than the limit. A terminator was encountered OR more bits
                 // are needed.
                 limit -= num_zeros;
@@ -719,8 +739,7 @@ pub trait ReadBitsLtr: private::FetchBitsLtr {
             if num_ones >= self.num_bits_left() {
                 num += self.num_bits_left();
                 self.fetch_bits()?;
-            }
-            else {
+            } else {
                 num += num_ones;
 
                 self.consume_bits(num_ones);
@@ -747,8 +766,7 @@ pub trait ReadBitsLtr: private::FetchBitsLtr {
                 num += limit;
                 self.consume_bits(limit);
                 break;
-            }
-            else {
+            } else {
                 limit -= num_ones;
                 num += num_ones;
 
@@ -822,7 +840,11 @@ pub struct BitStreamLtr<'a, B: ReadBytes> {
 impl<'a, B: ReadBytes> BitStreamLtr<'a, B> {
     /// Instantiate a new `BitStreamLtr` with the given source.
     pub fn new(reader: &'a mut B) -> Self {
-        BitStreamLtr { reader, bits: 0, n_bits_left: 0 }
+        BitStreamLtr {
+            reader,
+            bits: 0,
+            n_bits_left: 0,
+        }
     }
 }
 
@@ -871,7 +893,11 @@ pub struct BitReaderLtr<'a> {
 impl<'a> BitReaderLtr<'a> {
     /// Instantiate a new `BitReaderLtr` with the given buffer.
     pub fn new(buf: &'a [u8]) -> Self {
-        BitReaderLtr { buf, bits: 0, n_bits_left: 0 }
+        BitReaderLtr {
+            buf,
+            bits: 0,
+            n_bits_left: 0,
+        }
     }
 }
 
@@ -951,8 +977,7 @@ pub trait ReadBitsRtl: private::FetchBitsRtl {
     fn ignore_bits(&mut self, mut num_bits: u32) -> io::Result<()> {
         if num_bits <= self.num_bits_left() {
             self.consume_bits(num_bits);
-        }
-        else {
+        } else {
             // Consume whole bit caches directly.
             while num_bits > self.num_bits_left() {
                 num_bits -= self.num_bits_left();
@@ -1045,8 +1070,7 @@ pub trait ReadBitsRtl: private::FetchBitsRtl {
         // (as oppopsed to 32-bits), this is an acceptable solution.
         if bit_width == 0 {
             Ok(0)
-        }
-        else {
+        } else {
             let mut bits = self.get_bits();
             let mut bits_needed = bit_width;
 
@@ -1093,8 +1117,7 @@ pub trait ReadBitsRtl: private::FetchBitsRtl {
                 // bits were 0.
                 num += self.num_bits_left();
                 self.fetch_bits()?;
-            }
-            else {
+            } else {
                 // Otherwise, a 1 bit was encountered after `n_zeros` 0 bits.
                 num += num_zeros;
 
@@ -1127,8 +1150,7 @@ pub trait ReadBitsRtl: private::FetchBitsRtl {
                 num += limit;
                 self.consume_bits(limit);
                 break;
-            }
-            else {
+            } else {
                 // There are less zeros than the limit. A terminator was encountered OR more bits
                 // are needed.
                 limit -= num_zeros;
@@ -1161,8 +1183,7 @@ pub trait ReadBitsRtl: private::FetchBitsRtl {
             if num_ones >= self.num_bits_left() {
                 num += self.num_bits_left();
                 self.fetch_bits()?;
-            }
-            else {
+            } else {
                 num += num_ones;
 
                 self.consume_bits(num_ones);
@@ -1189,8 +1210,7 @@ pub trait ReadBitsRtl: private::FetchBitsRtl {
                 num += limit;
                 self.consume_bits(limit);
                 break;
-            }
-            else {
+            } else {
                 limit -= num_ones;
                 num += num_ones;
 
@@ -1262,7 +1282,11 @@ pub struct BitStreamRtl<'a, B: ReadBytes> {
 impl<'a, B: ReadBytes> BitStreamRtl<'a, B> {
     /// Instantiate a new `BitStreamRtl` with the given buffer.
     pub fn new(reader: &'a mut B) -> Self {
-        BitStreamRtl { reader, bits: 0, n_bits_left: 0 }
+        BitStreamRtl {
+            reader,
+            bits: 0,
+            n_bits_left: 0,
+        }
     }
 }
 
@@ -1311,7 +1335,11 @@ pub struct BitReaderRtl<'a> {
 impl<'a> BitReaderRtl<'a> {
     /// Instantiate a new `BitReaderRtl` with the given buffer.
     pub fn new(buf: &'a [u8]) -> Self {
-        BitReaderRtl { buf, bits: 0, n_bits_left: 0 }
+        BitReaderRtl {
+            buf,
+            bits: 0,
+            n_bits_left: 0,
+        }
     }
 }
 
@@ -1556,8 +1584,13 @@ mod tests {
     #[test]
     fn verify_bitstreamltr_read_unary_zeros() {
         // General tests
-        let mut bs =
-            BitReaderLtr::new(&[0b0000_0001, 0b0001_0000, 0b0000_0000, 0b1000_0000, 0b1111_1011]);
+        let mut bs = BitReaderLtr::new(&[
+            0b0000_0001,
+            0b0001_0000,
+            0b0000_0000,
+            0b1000_0000,
+            0b1111_1011,
+        ]);
 
         assert_eq!(bs.read_unary_zeros().unwrap(), 7);
         assert_eq!(bs.read_unary_zeros().unwrap(), 3);
@@ -1608,8 +1641,13 @@ mod tests {
     #[test]
     fn verify_bitstreamltr_read_unary_ones() {
         // General tests
-        let mut bs =
-            BitReaderLtr::new(&[0b1111_1110, 0b1110_1111, 0b1111_1111, 0b0111_1111, 0b0000_0100]);
+        let mut bs = BitReaderLtr::new(&[
+            0b1111_1110,
+            0b1110_1111,
+            0b1111_1111,
+            0b0111_1111,
+            0b0000_0100,
+        ]);
 
         assert_eq!(bs.read_unary_ones().unwrap(), 7);
         assert_eq!(bs.read_unary_ones().unwrap(), 3);
@@ -1646,8 +1684,13 @@ mod tests {
         assert_eq!(bs.read_unary_ones_capped(8).unwrap(), 7);
         assert_eq!(bs.read_unary_ones_capped(4).unwrap(), 4);
 
-        let mut bs =
-            BitReaderLtr::new(&[0b1111_1110, 0b1110_1111, 0b1111_1111, 0b0111_1111, 0b0000_0100]);
+        let mut bs = BitReaderLtr::new(&[
+            0b1111_1110,
+            0b1110_1111,
+            0b1111_1111,
+            0b0111_1111,
+            0b0000_0100,
+        ]);
 
         assert_eq!(bs.read_unary_ones_capped(9).unwrap(), 7);
         assert_eq!(bs.read_unary_ones_capped(9).unwrap(), 3);
@@ -1712,8 +1755,9 @@ mod tests {
             0b1100100,
         ];
 
-        const CODE_LENS: [u8; 25] =
-            [3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7];
+        const CODE_LENS: [u8; 25] = [
+            3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7,
+        ];
 
         const VALUES: [u8; 25] = [
             b'i', b' ', b'e', b't', b's', b'l', b'n', b'o', b'.', b'r', b'g', b'h', b'u', b'p',
@@ -1740,7 +1784,9 @@ mod tests {
 
         // Construct a codebook using the tables above.
         let mut builder = CodebookBuilder::new(bit_order);
-        let codebook = builder.make::<Entry8x8>(&CODES, &CODE_LENS, &VALUES).unwrap();
+        let codebook = builder
+            .make::<Entry8x8>(&CODES, &CODE_LENS, &VALUES)
+            .unwrap();
 
         (codebook, data, TEXT)
     }
@@ -1751,8 +1797,9 @@ mod tests {
 
         let mut bs = BitReaderLtr::new(&buf);
 
-        let decoded: Vec<u8> =
-            (0..text.len()).map(|_| bs.read_codebook(&codebook).unwrap().0).collect();
+        let decoded: Vec<u8> = (0..text.len())
+            .map(|_| bs.read_codebook(&codebook).unwrap().0)
+            .collect();
 
         assert_eq!(text, std::str::from_utf8(&decoded).unwrap());
     }
@@ -1955,8 +2002,13 @@ mod tests {
     #[test]
     fn verify_bitstreamrtl_read_unary_zeros() {
         // General tests
-        let mut bs =
-            BitReaderRtl::new(&[0b1000_0000, 0b0000_1000, 0b0000_0000, 0b0000_0001, 0b1101_1111]);
+        let mut bs = BitReaderRtl::new(&[
+            0b1000_0000,
+            0b0000_1000,
+            0b0000_0000,
+            0b0000_0001,
+            0b1101_1111,
+        ]);
 
         assert_eq!(bs.read_unary_zeros().unwrap(), 7);
         assert_eq!(bs.read_unary_zeros().unwrap(), 3);
@@ -2009,8 +2061,13 @@ mod tests {
     #[test]
     fn verify_bitstreamrtl_read_unary_ones() {
         // General tests
-        let mut bs =
-            BitReaderRtl::new(&[0b0111_1111, 0b1111_0111, 0b1111_1111, 0b1111_1110, 0b0010_0000]);
+        let mut bs = BitReaderRtl::new(&[
+            0b0111_1111,
+            0b1111_0111,
+            0b1111_1111,
+            0b1111_1110,
+            0b0010_0000,
+        ]);
 
         assert_eq!(bs.read_unary_ones().unwrap(), 7);
         assert_eq!(bs.read_unary_ones().unwrap(), 3);
@@ -2068,8 +2125,9 @@ mod tests {
 
         let mut bs = BitReaderRtl::new(&buf);
 
-        let decoded: Vec<u8> =
-            (0..text.len()).map(|_| bs.read_codebook(&codebook).unwrap().0).collect();
+        let decoded: Vec<u8> = (0..text.len())
+            .map(|_| bs.read_codebook(&codebook).unwrap().0)
+            .collect();
 
         assert_eq!(text, std::str::from_utf8(&decoded).unwrap());
     }

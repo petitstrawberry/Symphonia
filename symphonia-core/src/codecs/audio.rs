@@ -8,6 +8,7 @@
 //! Audio decoder specific support.
 
 use std::fmt;
+use std::prelude::v1::*;
 
 use crate::audio::sample::SampleFormat;
 use crate::audio::{Channels, GenericAudioBufferRef};
@@ -222,7 +223,10 @@ pub struct AudioDecoderOptions {
 
 impl Default for AudioDecoderOptions {
     fn default() -> Self {
-        Self { gapless: true, verify: false }
+        Self {
+            gapless: true,
+            verify: false,
+        }
     }
 }
 

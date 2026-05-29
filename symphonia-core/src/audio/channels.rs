@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use std::fmt::Debug;
+use std::prelude::v1::*;
 
 use bitflags::bitflags;
 
@@ -116,7 +117,8 @@ impl Position {
 
     /// Try to create a position mask with the first `count` positions.
     pub fn from_count(count: u32) -> Option<Position> {
-        1u64.checked_shl(count).and_then(|shifted| Position::from_bits(shifted - 1))
+        1u64.checked_shl(count)
+            .and_then(|shifted| Position::from_bits(shifted - 1))
     }
 
     /// Try to convert a WAVE channel count into a position mask.
@@ -128,8 +130,7 @@ impl Position {
         if count <= Position::NUM_STD_WAVE_CHANNELS {
             // Channel count does not exceed the maximum number of standard WAVE channels.
             Position::from_count(count)
-        }
-        else {
+        } else {
             None
         }
     }
@@ -142,8 +143,7 @@ impl Position {
         if mask >> Position::NUM_STD_WAVE_CHANNELS == 0 {
             // The bitmask does not contain any bits outside the standard WAVE channels bitmask.
             Position::from_bits(u64::from(mask))
-        }
-        else {
+        } else {
             None
         }
     }
@@ -324,7 +324,10 @@ impl Channels {
     /// Panics if `pos` contains more than one position.
     pub fn get_canonical_index_for_positioned_channel(&self, pos: Position) -> Option<usize> {
         // The selected channel position mask must have exactly a single channel selected.
-        assert!(pos.bits().count_ones() == 1, "more than one channel position specified");
+        assert!(
+            pos.bits().count_ones() == 1,
+            "more than one channel position specified"
+        );
 
         match self {
             Channels::Positioned(positions) => {
@@ -464,8 +467,11 @@ pub mod layouts {
     /// * Front left
     /// * Front right
     /// * Front center
-    pub const CHANNEL_LAYOUT_3P0: Channels =
-        layout!(Position::FRONT_LEFT, Position::FRONT_RIGHT, Position::FRONT_CENTER);
+    pub const CHANNEL_LAYOUT_3P0: Channels = layout!(
+        Position::FRONT_LEFT,
+        Position::FRONT_RIGHT,
+        Position::FRONT_CENTER
+    );
 
     /// 3.0 audio with rear surround channel.
     ///
@@ -473,8 +479,11 @@ pub mod layouts {
     /// * Front left
     /// * Front right
     /// * Rear center
-    pub const CHANNEL_LAYOUT_3P0_REAR: Channels =
-        layout!(Position::FRONT_LEFT, Position::FRONT_RIGHT, Position::REAR_CENTER);
+    pub const CHANNEL_LAYOUT_3P0_REAR: Channels = layout!(
+        Position::FRONT_LEFT,
+        Position::FRONT_RIGHT,
+        Position::REAR_CENTER
+    );
 
     /// 3.1 audio.
     ///

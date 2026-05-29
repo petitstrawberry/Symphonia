@@ -35,10 +35,11 @@ exp-video-codecs = []
 [dependencies]
 bitflags = "2.4.2"
 bytemuck = "1.7"
-lazy_static = { workspace = true }
-log = { workspace = true }
-num-complex = "0.4"
-smallvec = { workspace = true }
+lazy_static = { version = "1.4.0", default-features = false, features = ["spin_no_std"] }
+log = { version = "0.4", default-features = false }
+num-complex = { version = "0.4", default-features = false }
+smallvec = { version = "1.13.1", default-features = false }
+std = { package = "symphonia-std", version = "0.6.0", path = "../symphonia-std" }
 
 [dependencies.rustfft]
 version = "6.1.0"

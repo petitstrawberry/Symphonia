@@ -11,6 +11,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use std::prelude::v1::*;
 use symphonia_core::errors::{Result, decode_error};
 use symphonia_core::io::ReadBitsLtr;
 use symphonia_core::io::vlc::{Codebook, Entry8x16};
@@ -45,7 +46,8 @@ lazy_static! {
     /// Pre-computed table of y = x^(4/3).
     static ref POW43_TABLE: Box<[f32; POW43_TABLE_LEN]> = {
         let table: Vec<f32> = (0..POW43_TABLE_LEN).map(|i| (i as f32).powf(4.0 / 3.0)).collect();
-        table.into_boxed_slice().try_into().expect("vec initialized to correct table length")
+        // UNWRAP: The vector was initialized to be the correct size.
+        table.into_boxed_slice().try_into().unwrap()
     };
 }
 
@@ -61,7 +63,8 @@ lazy_static! {
             .map(|i| 2.0f32.powf(0.25 * f32::from(i as i16 - 56 + NORMAL_SCALE_MIN)))
             .collect();
 
-        table.into_boxed_slice().try_into().expect("vec initialized to correct table length")
+        // UNWRAP: The vector was initialized to be the correct size.
+        table.into_boxed_slice().try_into().unwrap()
     };
 }
 
@@ -77,7 +80,8 @@ lazy_static! {
             .map(|i| 0.5f32.powf(0.25 * f32::from(i as i16 + INTENSITY_SCALE_MIN)))
             .collect();
 
-        table.into_boxed_slice().try_into().expect("vec initialized to correct table length")
+        // UNWRAP: The vector was initialized to be the correct size.
+        table.into_boxed_slice().try_into().unwrap()
     };
 }
 
@@ -156,8 +160,7 @@ impl IcsInfo {
                     self.window_groups += 1;
                 }
             }
-        }
-        else {
+        } else {
             self.long_win = true;
             self.num_windows = 1;
             self.max_sfb = bs.read_bits_leq32(6)? as usize;
@@ -180,11 +183,9 @@ impl IcsInfo {
     fn get_group_start(&self, g: usize) -> usize {
         if g == 0 {
             0
-        }
-        else if g >= self.window_groups {
+        } else if g >= self.window_groups {
             if self.long_win { 1 } else { 8 }
-        }
-        else {
+        } else {
             self.group_start[g]
         }
     }
@@ -317,21 +318,18 @@ impl Ics {
             for sfb in 0..self.info.max_sfb {
                 self.scales[g][sfb] = if self.is_zero(g, sfb) {
                     0.0
-                }
-                else if self.is_intensity(g, sfb) {
+                } else if self.is_intensity(g, sfb) {
                     scf_intensity += i16::from(bs.read_codebook(scf_cb)?.0) - 60;
 
                     // Valid range is -155 to 100. Value offset by 155 for lookup table indexing.
                     validate!((scf_intensity >= 0) && (scf_intensity < 256));
 
                     table_intensity_scf[scf_intensity as usize]
-                }
-                else if self.is_noise(g, sfb) {
+                } else if self.is_noise(g, sfb) {
                     if noise_pcm_flag {
                         noise_pcm_flag = false;
                         scf_noise += (bs.read_bits_leq32(9)? as i16) - 256;
-                    }
-                    else {
+                    } else {
                         scf_noise += i16::from(bs.read_codebook(scf_cb)?.0) - 60;
                     }
 
@@ -339,8 +337,7 @@ impl Ics {
                     validate!((scf_noise >= 0) && (scf_noise < 256));
 
                     table_normal_scf[scf_noise as usize]
-                }
-                else {
+                } else {
                     scf_normal += i16::from(bs.read_codebook(scf_cb)?.0) - 60;
 
                     // Valid range is -100 to 155. Value offset by 100 for lookup table indexing.
@@ -354,7 +351,11 @@ impl Ics {
     }
 
     pub fn get_bands(&self) -> &'static [usize] {
-        if self.info.long_win { self.sbinfo.long_bands } else { self.sbinfo.short_bands }
+        if self.info.long_win {
+            self.sbinfo.long_bands
+        } else {
+            self.sbinfo.short_bands
+        }
     }
 
     fn decode_spectrum<B: ReadBitsLtr>(&mut self, bs: &mut B, lcg: &mut Lcg) -> Result<()> {
@@ -559,8 +560,16 @@ fn decode_pairs_unsigned<B: ReadBitsLtr>(
     for out in dst.chunks_exact_mut(2) {
         let (x, y) = cb.read_dequant(bs)?;
 
-        let sign_x = if x != 0.0 { decode_sign(bs.read_bit()?) } else { 1.0 };
-        let sign_y = if y != 0.0 { decode_sign(bs.read_bit()?) } else { 1.0 };
+        let sign_x = if x != 0.0 {
+            decode_sign(bs.read_bit()?)
+        } else {
+            1.0
+        };
+        let sign_y = if y != 0.0 {
+            decode_sign(bs.read_bit()?)
+        } else {
+            1.0
+        };
 
         out[0] = sign_x * x * scale;
         out[1] = sign_y * y * scale;
@@ -581,8 +590,16 @@ fn decode_pairs_unsigned_escape<B: ReadBitsLtr>(
         let (a, b) = cb.read_quant(bs)?;
 
         // Read the signs of the dequantized samples.
-        let sign_x = if a != 0 { decode_sign(bs.read_bit()?) } else { 1.0 };
-        let sign_y = if b != 0 { decode_sign(bs.read_bit()?) } else { 1.0 };
+        let sign_x = if a != 0 {
+            decode_sign(bs.read_bit()?)
+        } else {
+            1.0
+        };
+        let sign_y = if b != 0 {
+            decode_sign(bs.read_bit()?)
+        } else {
+            1.0
+        };
 
         let x = iquant[if a == 16 { read_escape(bs)? } else { a } as usize];
         let y = iquant[if b == 16 { read_escape(bs)? } else { b } as usize];

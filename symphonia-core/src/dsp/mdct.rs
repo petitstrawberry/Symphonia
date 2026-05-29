@@ -11,6 +11,7 @@
 
 use crate::dsp::complex::Complex;
 use crate::dsp::fft::*;
+use std::prelude::v1::*;
 
 /// The Inverse Modified Discrete Transform (IMDCT).
 pub struct Imdct {
@@ -42,7 +43,12 @@ impl Imdct {
         let n2 = n / 2;
         let mut twiddle = Vec::with_capacity(n2);
 
-        let alpha = 1.0 / 8.0 + if scale.is_sign_positive() { 0.0 } else { n2 as f64 };
+        let alpha = 1.0 / 8.0
+            + if scale.is_sign_positive() {
+                0.0
+            } else {
+                n2 as f64
+            };
         let pi_n = std::f64::consts::PI / n as f64;
         let sqrt_scale = scale.abs().sqrt();
 
@@ -56,7 +62,11 @@ impl Imdct {
         // Allocate scratch for the IMDCT.
         let scratch = vec![Default::default(); n2].into_boxed_slice();
 
-        Imdct { fft: Fft::new(n2), scratch, twiddle: twiddle.into_boxed_slice() }
+        Imdct {
+            fft: Fft::new(n2),
+            scratch,
+            twiddle: twiddle.into_boxed_slice(),
+        }
     }
 
     /// Performs the the N-point Inverse Modified Discrete Cosine Transform.
@@ -97,7 +107,11 @@ impl Imdct {
 
         // Post-FFT twiddling and processing to expand the N/2 complex output values into 2N real
         // output samples.
-        for (i, (x, &w)) in self.scratch[..n4].iter().zip(self.twiddle[..n4].iter()).enumerate() {
+        for (i, (x, &w)) in self.scratch[..n4]
+            .iter()
+            .zip(self.twiddle[..n4].iter())
+            .enumerate()
+        {
             // The real and imaginary components of the post-twiddled FFT samples are used to
             // generate 4 reak output samples. Using the first half of the complex FFT output,
             // populate each of the 4 output vectors.
@@ -117,7 +131,11 @@ impl Imdct {
             vec3[fi] = val.re;
         }
 
-        for (i, (x, &w)) in self.scratch[n4..].iter().zip(self.twiddle[n4..].iter()).enumerate() {
+        for (i, (x, &w)) in self.scratch[n4..]
+            .iter()
+            .zip(self.twiddle[n4..].iter())
+            .enumerate()
+        {
             // Using the second half of the FFT output samples, finish populating each of the 4
             // output vectors.
             let val = w * x.conj();

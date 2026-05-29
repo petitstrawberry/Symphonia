@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use std::ops::RangeBounds;
+use std::prelude::v1::*;
 
 use crate::audio::{
     conv::ConvertibleSample,
@@ -903,7 +904,11 @@ impl<'a> GenericAudioSlice<'a> {
     where
         Sout: SampleBytes + ConvertibleSample,
     {
-        impl_generic_slice_func!(self, slice, slice.copy_bytes_to_vec_interleaved_as::<Sout>(dst))
+        impl_generic_slice_func!(
+            self,
+            slice,
+            slice.copy_bytes_to_vec_interleaved_as::<Sout>(dst)
+        )
     }
 
     /// Copy audio planes as bytes to discrete byte vectors.

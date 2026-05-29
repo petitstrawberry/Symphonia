@@ -21,6 +21,7 @@ members = [
     "symphonia-metadata",
     "symphonia-play",
     "symphonia-check",
+    "symphonia-std",
 ]
 
 [workspace.package]
@@ -49,4 +50,3 @@ unwrap_used = "warn"
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fuzzing)'] }
-

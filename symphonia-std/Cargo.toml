@@ -1,0 +1,19 @@
+[package]
+name = "symphonia-std"
+description = "Minimal no_std std compatibility shim for Symphonia."
+authors = ["Philip Deljanov <philip.deljanov@gmail.com>"]
+readme = "../README.md"
+categories = ["multimedia", "multimedia::audio", "multimedia::encoding"]
+keywords = ["audio", "codec", "decoder", "multimedia", "media"]
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+libm = "0.2"
+
+[lints]
+workspace = true

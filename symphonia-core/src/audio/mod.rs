@@ -24,6 +24,7 @@
 //! the generic wrappers match closely with that of the typed interface and are dispatch to the
 //! active enumerator.
 use std::ops::Range;
+use std::prelude::v1::*;
 
 mod buf;
 mod channels;
@@ -139,7 +140,12 @@ impl<S: Sample> Interleaved<'_, S> {
         let index = bound.start * num_planes;
         let end = index + len * num_planes;
 
-        Interleaved { planes, num_planes, index, end }
+        Interleaved {
+            planes,
+            num_planes,
+            index,
+            end,
+        }
     }
 }
 
@@ -398,8 +404,14 @@ pub trait AudioMut<S: Sample>: Audio<S> {
         S: Sample + FromSample<Sin>,
         Src: Audio<Sin>,
     {
-        assert!(self.spec() == src.spec(), "expected identical audio specifications");
-        assert!(self.frames() == src.frames(), "expected identical number of frames");
+        assert!(
+            self.spec() == src.spec(),
+            "expected identical audio specifications"
+        );
+        assert!(
+            self.frames() == src.frames(),
+            "expected identical number of frames"
+        );
 
         for (src, dst) in src.iter_planes().zip(self.iter_planes_mut()) {
             // Dispatch to a common helper function.
@@ -420,7 +432,11 @@ pub trait AudioMut<S: Sample>: Audio<S> {
         S: Sample + FromSample<Sin>,
         Src: AsRef<[Sin]>,
     {
-        assert!(src.len() == self.num_planes(), "expected {} source slices", self.num_planes());
+        assert!(
+            src.len() == self.num_planes(),
+            "expected {} source slices",
+            self.num_planes()
+        );
 
         for (src, dst) in src.iter().zip(self.iter_planes_mut()) {
             // Dispatch to a common copy function.

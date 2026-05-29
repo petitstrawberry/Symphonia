@@ -7,12 +7,16 @@
 
 use std::cmp;
 use std::io;
+use std::prelude::v1::*;
 
 use super::{FiniteStream, ReadBytes, SeekBuffered};
 
 #[inline(always)]
 fn out_of_bounds_error<T>() -> io::Result<T> {
-    Err(io::Error::new(io::ErrorKind::UnexpectedEof, "out of bounds"))
+    Err(io::Error::new(
+        io::ErrorKind::UnexpectedEof,
+        "out of bounds",
+    ))
 }
 
 /// A `ScopedStream` restricts the number of bytes that may be read to an upper limit.
@@ -27,7 +31,12 @@ impl<B: ReadBytes> ScopedStream<B> {
     /// Instantiates a new `ScopedStream` with an upper limit on the number of bytes that can be
     /// read from the inner source.
     pub fn new(inner: B, len: u64) -> Self {
-        ScopedStream { start: inner.pos(), inner, len, read: 0 }
+        ScopedStream {
+            start: inner.pos(),
+            inner,
+            len,
+            read: 0,
+        }
     }
 
     /// Returns an immutable reference to the inner stream.
@@ -166,7 +175,9 @@ impl<B: ReadBytes + SeekBuffered> SeekBuffered for ScopedStream<B> {
 
     #[inline(always)]
     fn unread_buffer_len(&self) -> usize {
-        self.inner.unread_buffer_len().min((self.len - self.read) as usize)
+        self.inner
+            .unread_buffer_len()
+            .min((self.len - self.read) as usize)
     }
 
     #[inline(always)]
@@ -177,7 +188,8 @@ impl<B: ReadBytes + SeekBuffered> SeekBuffered for ScopedStream<B> {
     #[inline(always)]
     fn seek_buffered(&mut self, pos: u64) -> u64 {
         // Clamp the seekable position to within the bounds of the ScopedStream.
-        self.inner.seek_buffered(pos.clamp(self.start, self.start + self.len))
+        self.inner
+            .seek_buffered(pos.clamp(self.start, self.start + self.len))
     }
 
     #[inline(always)]
@@ -186,6 +198,7 @@ impl<B: ReadBytes + SeekBuffered> SeekBuffered for ScopedStream<B> {
         // within the bounds of the ScopedStream.
         let max_back = self.read.min(isize::MAX as u64) as isize;
         let max_forward = (self.len - self.read).min(isize::MAX as u64) as isize;
-        self.inner.seek_buffered_rel(delta.clamp(-max_back, max_forward))
+        self.inner
+            .seek_buffered_rel(delta.clamp(-max_back, max_forward))
     }
 }

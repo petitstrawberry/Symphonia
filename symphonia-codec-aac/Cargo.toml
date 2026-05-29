@@ -14,10 +14,11 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-log = { workspace = true }
-lazy_static = { workspace = true }
-symphonia-core = { version = "0.6.0", path = "../symphonia-core" }
-symphonia-common = { version = "0.6.0", path = "../symphonia-common" }
+log = { version = "0.4", default-features = false }
+lazy_static = { version = "1.4.0", default-features = false, features = ["spin_no_std"] }
+symphonia-core = { version = "0.6.0", path = "../symphonia-core", default-features = false }
+symphonia-common = { version = "0.6.0", path = "../symphonia-common", default-features = false }
+std = { package = "symphonia-std", version = "0.6.0", path = "../symphonia-std" }
 
 [lints]
 workspace = true

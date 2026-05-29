@@ -11,6 +11,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use std::prelude::v1::*;
 pub const MAX_WINDOWS: usize = 8;
 pub const MAX_SFBS: usize = 64;
 
@@ -40,8 +41,9 @@ pub const SWB_OFFSET_8K_LONG: [usize; 40 + 1] = [
     1024,
 ];
 
-pub const SWB_OFFSET_8K_SHORT: [usize; 15 + 1] =
-    [0, 4, 8, 12, 16, 20, 24, 28, 36, 44, 52, 60, 72, 88, 108, 128];
+pub const SWB_OFFSET_8K_SHORT: [usize; 15 + 1] = [
+    0, 4, 8, 12, 16, 20, 24, 28, 36, 44, 52, 60, 72, 88, 108, 128,
+];
 
 pub const SWB_OFFSET_16K_LONG: [usize; 43 + 1] = [
     0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 100, 112, 124, 136, 148, 160, 172, 184, 196, 212,
@@ -49,8 +51,9 @@ pub const SWB_OFFSET_16K_LONG: [usize; 43 + 1] = [
     896, 960, 1024,
 ];
 
-pub const SWB_OFFSET_16K_SHORT: [usize; 15 + 1] =
-    [0, 4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 60, 72, 88, 108, 128];
+pub const SWB_OFFSET_16K_SHORT: [usize; 15 + 1] = [
+    0, 4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 60, 72, 88, 108, 128,
+];
 
 pub const SWB_OFFSET_24K_LONG: [usize; 47 + 1] = [
     0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 52, 60, 68, 76, 84, 92, 100, 108, 116, 124, 136,
@@ -58,8 +61,9 @@ pub const SWB_OFFSET_24K_LONG: [usize; 47 + 1] = [
     704, 768, 832, 896, 960, 1024,
 ];
 
-pub const SWB_OFFSET_24K_SHORT: [usize; 15 + 1] =
-    [0, 4, 8, 12, 16, 20, 24, 28, 36, 44, 52, 64, 76, 92, 108, 128];
+pub const SWB_OFFSET_24K_SHORT: [usize; 15 + 1] = [
+    0, 4, 8, 12, 16, 20, 24, 28, 36, 44, 52, 64, 76, 92, 108, 128,
+];
 
 pub const SWB_OFFSET_64K_LONG: [usize; 47 + 1] = [
     0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 64, 72, 80, 88, 100, 112, 124, 140,

@@ -7,6 +7,7 @@
 
 //! The `dsp` module provides efficient implementations of common signal processing algorithms.
 
+use std::prelude::v1::*;
 pub mod fft;
 pub mod mdct;
 

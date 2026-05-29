@@ -11,6 +11,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use std::prelude::v1::*;
 use symphonia_core::audio::{AudioBuffer, AudioMut};
 use symphonia_core::errors::{Result, decode_error};
 use symphonia_core::io::ReadBitsLtr;
@@ -125,7 +126,11 @@ impl ChannelPair {
                         // Intensity stereo
                         // Section 4.6.8.2.3
                         let invert = self.ms_mask_present == 1 && self.ms_used[g][sfb];
-                        let dir = if self.ics1.get_intensity_dir(g, sfb) { 1.0 } else { -1.0 };
+                        let dir = if self.ics1.get_intensity_dir(g, sfb) {
+                            1.0
+                        } else {
+                            -1.0
+                        };
                         let factor = if invert { -1.0 } else { 1.0 };
 
                         let scale = dir * factor * self.ics1.scales[g][sfb];
@@ -136,12 +141,10 @@ impl ChannelPair {
                         for (l, r) in left.iter().zip(right) {
                             *r = scale * l;
                         }
-                    }
-                    else if self.ics0.is_noise(g, sfb) || self.ics1.is_noise(g, sfb) {
+                    } else if self.ics0.is_noise(g, sfb) || self.ics1.is_noise(g, sfb) {
                         // Perceptual noise substitution, do not do joint-stereo decoding.
                         // Section 4.6.13.3
-                    }
-                    else if self.ms_used[g][sfb] {
+                    } else if self.ms_used[g][sfb] {
                         // Mid-side stereo.
                         let mid = &mut self.ics0.coeffs[start..end];
                         let side = &mut self.ics1.coeffs[start..end];
@@ -165,18 +168,12 @@ impl ChannelPair {
         abuf: &mut AudioBuffer<f32>,
         rate_idx: usize,
     ) {
-        self.ics0.synth_channel(
-            dsp,
-            rate_idx,
-            abuf.plane_mut(self.channel).expect("channel index is valid"),
-        );
+        self.ics0
+            .synth_channel(dsp, rate_idx, abuf.plane_mut(self.channel).unwrap());
 
         if self.is_pair {
-            self.ics1.synth_channel(
-                dsp,
-                rate_idx,
-                abuf.plane_mut(self.channel + 1).expect("channel+1 index is valid"),
-            );
+            self.ics1
+                .synth_channel(dsp, rate_idx, abuf.plane_mut(self.channel + 1).unwrap());
         }
     }
 }

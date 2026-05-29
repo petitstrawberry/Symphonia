@@ -9,6 +9,7 @@
 //! types.
 
 use std::fmt;
+use std::prelude::v1::*;
 
 use crate::util::clamp::{clamp_f32, clamp_f64, clamp_i24, clamp_u24};
 
@@ -255,8 +256,7 @@ impl i24 {
         if cfg!(target_endian = "little") {
             // In little-endian the MSB is the last byte. Drop it.
             [b[0], b[1], b[2]]
-        }
-        else {
+        } else {
             // In big-endian the MSB is the first byte. Drop it.
             [b[1], b[2], b[3]]
         }
@@ -440,8 +440,7 @@ impl u24 {
         if cfg!(target_endian = "little") {
             // In little-endian the MSB is the last byte. Drop it.
             [b[0], b[1], b[2]]
-        }
-        else {
+        } else {
             // In big-endian the MSB is the first byte. Drop it.
             [b[1], b[2], b[3]]
         }

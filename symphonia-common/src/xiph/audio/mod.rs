@@ -12,6 +12,6 @@
 #![allow(clippy::identity_op)]
 #![allow(clippy::manual_range_contains)]
 
+use std::prelude::v1::*;
 pub mod flac;
-pub mod opus;
 pub mod vorbis;

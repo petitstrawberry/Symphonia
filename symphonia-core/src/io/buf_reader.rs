@@ -7,12 +7,16 @@
 
 use std::cmp;
 use std::io;
+use std::prelude::v1::*;
 
 use super::{FiniteStream, ReadBytes};
 
 #[inline(always)]
 fn underrun_error<T>() -> io::Result<T> {
-    Err(io::Error::new(io::ErrorKind::UnexpectedEof, "buffer underrun"))
+    Err(io::Error::new(
+        io::ErrorKind::UnexpectedEof,
+        "buffer underrun",
+    ))
 }
 
 /// A `BufReader` reads bytes from a byte buffer.

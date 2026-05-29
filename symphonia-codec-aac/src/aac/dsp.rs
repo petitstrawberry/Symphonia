@@ -11,6 +11,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use std::prelude::v1::*;
 use symphonia_core::dsp::mdct::Imdct;
 
 use crate::aac::common::*;
@@ -34,8 +35,20 @@ impl Dsp {
     pub fn new() -> Self {
         let mut kbd_long_win: [f32; 1024] = [0.0; 1024];
         let mut kbd_short_win: [f32; 128] = [0.0; 128];
-        generate_window(WindowType::KaiserBessel(4.0), 1.0, 1024, true, &mut kbd_long_win);
-        generate_window(WindowType::KaiserBessel(6.0), 1.0, 128, true, &mut kbd_short_win);
+        generate_window(
+            WindowType::KaiserBessel(4.0),
+            1.0,
+            1024,
+            true,
+            &mut kbd_long_win,
+        );
+        generate_window(
+            WindowType::KaiserBessel(6.0),
+            1.0,
+            128,
+            true,
+            &mut kbd_short_win,
+        );
         let mut sine_long_win: [f32; 1024] = [0.0; 1024];
         let mut sine_short_win: [f32; 128] = [0.0; 128];
         generate_window(WindowType::Sine, 1.0, 1024, true, &mut sine_long_win);
@@ -76,9 +89,11 @@ impl Dsp {
         // Inverse MDCT
         if seq != EIGHT_SHORT_SEQUENCE {
             self.imdct_long.imdct(coeffs, &mut self.pcm_long);
-        }
-        else {
-            for (ain, aout) in coeffs.chunks_exact(128).zip(self.pcm_long.chunks_exact_mut(256)) {
+        } else {
+            for (ain, aout) in coeffs
+                .chunks_exact(128)
+                .zip(self.pcm_long.chunks_exact_mut(256))
+            {
                 self.imdct_short.imdct(ain, aout);
             }
 
@@ -91,8 +106,7 @@ impl Dsp {
                         self.pcm_short[w * 128 + i] += src[i] * short_win[i];
                         self.pcm_short[w * 128 + i + 128] += src[i + 128] * short_win[127 - i];
                     }
-                }
-                else {
+                } else {
                     for i in 0..128 {
                         self.pcm_short[i] = src[i] * prev_short_win[i];
                         self.pcm_short[i + 128] = src[i + 128] * short_win[127 - i];

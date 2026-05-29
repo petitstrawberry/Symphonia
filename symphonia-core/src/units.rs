@@ -8,6 +8,7 @@
 //! The `units` module provides definitions for common units.
 
 use std::fmt;
+use std::prelude::v1::*;
 
 use core::num::NonZero;
 
@@ -524,11 +525,20 @@ pub struct Time {
 
 impl Time {
     /// The maximum representable time.
-    pub const MAX: Self = Time { seconds: i64::MAX, nanos: 999_999_999 };
+    pub const MAX: Self = Time {
+        seconds: i64::MAX,
+        nanos: 999_999_999,
+    };
     /// The minimum representable time.
-    pub const MIN: Self = Time { seconds: i64::MIN, nanos: 0 };
+    pub const MIN: Self = Time {
+        seconds: i64::MIN,
+        nanos: 0,
+    };
     /// A time of 0.
-    pub const ZERO: Self = Time { seconds: 0, nanos: 0 };
+    pub const ZERO: Self = Time {
+        seconds: 0,
+        nanos: 0,
+    };
 
     /// Milliseconds per second.
     const MS_PER_SEC: i64 = 1_000;
@@ -550,7 +560,10 @@ impl Time {
     /// Returns `None` if nanoseconds exceeds `999_999_999`.
     pub const fn try_new(s: i64, ns: u32) -> Option<Self> {
         match ns {
-            0..1_000_000_000 => Some(Time { seconds: s, nanos: ns }),
+            0..1_000_000_000 => Some(Time {
+                seconds: s,
+                nanos: ns,
+            }),
             _ => None,
         }
     }
@@ -561,7 +574,10 @@ impl Time {
     pub fn try_from_nanos_i128(total_ns: i128) -> Option<Time> {
         let seconds = total_ns.div_euclid(Self::NS_PER_SEC_128);
         let nanos = total_ns.rem_euclid(Self::NS_PER_SEC_128);
-        seconds.try_into().ok().map(|seconds| Time { seconds, nanos: nanos as u32 })
+        seconds.try_into().ok().map(|seconds| Time {
+            seconds,
+            nanos: nanos as u32,
+        })
     }
 
     /// Try to create from an unsigned 128-bit count of total nanoseconds.
@@ -570,7 +586,10 @@ impl Time {
     pub fn try_from_nanos_u128(total_ns: u128) -> Option<Time> {
         let seconds = total_ns.div_euclid(Self::NS_PER_SEC_128 as u128);
         let nanos = total_ns.rem_euclid(Self::NS_PER_SEC_128 as u128);
-        seconds.try_into().ok().map(|seconds| Time { seconds, nanos: nanos as u32 })
+        seconds.try_into().ok().map(|seconds| Time {
+            seconds,
+            nanos: nanos as u32,
+        })
     }
 
     /// Try to instantiate from a floating-point count of total seconds.
@@ -596,10 +615,15 @@ impl Time {
         Some(if nanos >= 1_000_000_000.0 {
             // Note: In practice, this addition will never saturate because `seconds` is less-than
             // `i64::MAX as f64 as i64` which is much smaller than `i64::MAX`.
-            Time { seconds: (seconds as i64).saturating_add(1), nanos: 0 }
-        }
-        else {
-            Time { seconds: seconds as i64, nanos: nanos as u32 }
+            Time {
+                seconds: (seconds as i64).saturating_add(1),
+                nanos: 0,
+            }
+        } else {
+            Time {
+                seconds: seconds as i64,
+                nanos: nanos as u32,
+            }
         })
     }
 
@@ -607,42 +631,60 @@ impl Time {
     pub const fn from_nanos(total_ns: i64) -> Time {
         let seconds = total_ns.div_euclid(Self::NS_PER_SEC);
         let nanos = total_ns.rem_euclid(Self::NS_PER_SEC);
-        Time { seconds, nanos: nanos as u32 }
+        Time {
+            seconds,
+            nanos: nanos as u32,
+        }
     }
 
     /// Create from an unsigned count of total nanoseconds.
     pub const fn from_nanos_u64(total_ns: u64) -> Time {
         let seconds = total_ns.div_euclid(Self::NS_PER_SEC as u64);
         let nanos = total_ns.rem_euclid(Self::NS_PER_SEC as u64);
-        Time { seconds: seconds as i64, nanos: nanos as u32 }
+        Time {
+            seconds: seconds as i64,
+            nanos: nanos as u32,
+        }
     }
 
     /// Create from a count of total microseconds.
     pub const fn from_micros(total_us: i64) -> Time {
         let seconds = total_us.div_euclid(Self::US_PER_SEC);
         let micros = total_us.rem_euclid(Self::US_PER_SEC);
-        Time { seconds, nanos: 1_000 * micros as u32 }
+        Time {
+            seconds,
+            nanos: 1_000 * micros as u32,
+        }
     }
 
     /// Create from an unsigned count of total microseconds.
     pub const fn from_micros_u64(total_us: u64) -> Time {
         let seconds = total_us.div_euclid(Self::US_PER_SEC as u64);
         let micros = total_us.rem_euclid(Self::US_PER_SEC as u64);
-        Time { seconds: seconds as i64, nanos: 1_000 * micros as u32 }
+        Time {
+            seconds: seconds as i64,
+            nanos: 1_000 * micros as u32,
+        }
     }
 
     /// Create from a count of total milliseconds.
     pub const fn from_millis(total_ms: i64) -> Time {
         let seconds = total_ms.div_euclid(Self::MS_PER_SEC);
         let millis = total_ms.rem_euclid(Self::MS_PER_SEC);
-        Time { seconds, nanos: 1_000_000 * millis as u32 }
+        Time {
+            seconds,
+            nanos: 1_000_000 * millis as u32,
+        }
     }
 
     /// Create from an unsigned count of total milliseconds.
     pub const fn from_millis_u64(total_ms: u64) -> Time {
         let seconds = total_ms.div_euclid(Self::MS_PER_SEC as u64);
         let millis = total_ms.rem_euclid(Self::MS_PER_SEC as u64);
-        Time { seconds: seconds as i64, nanos: 1_000_000 * millis as u32 }
+        Time {
+            seconds: seconds as i64,
+            nanos: 1_000_000 * millis as u32,
+        }
     }
 
     /// Try to create from a clock time consisting of seconds and nanoseconds (i.e.,
@@ -730,7 +772,11 @@ impl Time {
     /// Get the time in whole seconds.
     #[inline]
     pub fn as_secs(&self) -> i64 {
-        if self.seconds >= 0 || self.nanos == 0 { self.seconds } else { self.seconds + 1 }
+        if self.seconds >= 0 || self.nanos == 0 {
+            self.seconds
+        } else {
+            self.seconds + 1
+        }
     }
 
     /// Get the time in whole minutes.
@@ -765,11 +811,9 @@ impl Time {
     pub fn parts(&self) -> (i64, u32) {
         if self.seconds >= 0 {
             (self.seconds, self.nanos)
-        }
-        else if self.nanos == 0 {
+        } else if self.nanos == 0 {
             (self.seconds, 0)
-        }
-        else {
+        } else {
             (self.seconds + 1, 1_000_000_000 - self.nanos)
         }
     }
@@ -777,11 +821,16 @@ impl Time {
     /// Negate the time, returning `None` if an overflow occurs.
     pub fn checked_neg(self) -> Option<Self> {
         if self.nanos == 0 {
-            Some(Self { seconds: self.seconds.checked_neg()?, nanos: 0 })
-        }
-        else {
+            Some(Self {
+                seconds: self.seconds.checked_neg()?,
+                nanos: 0,
+            })
+        } else {
             let seconds = self.seconds.checked_neg()?.checked_sub(1)?;
-            Some(Self { seconds, nanos: 1_000_000_000 - self.nanos })
+            Some(Self {
+                seconds,
+                nanos: 1_000_000_000 - self.nanos,
+            })
         }
     }
 
@@ -793,13 +842,20 @@ impl Time {
 
         // Normalize.
         let time = if nanos >= Self::NS_PER_SEC {
-            Self { seconds: seconds.checked_add(1)?, nanos: (nanos - Self::NS_PER_SEC) as u32 }
-        }
-        else if nanos < 0 {
-            Self { seconds: seconds.checked_sub(1)?, nanos: (nanos + Self::NS_PER_SEC) as u32 }
-        }
-        else {
-            Self { seconds, nanos: nanos as u32 }
+            Self {
+                seconds: seconds.checked_add(1)?,
+                nanos: (nanos - Self::NS_PER_SEC) as u32,
+            }
+        } else if nanos < 0 {
+            Self {
+                seconds: seconds.checked_sub(1)?,
+                nanos: (nanos + Self::NS_PER_SEC) as u32,
+            }
+        } else {
+            Self {
+                seconds,
+                nanos: nanos as u32,
+            }
         };
 
         Some(time)
@@ -851,13 +907,20 @@ impl Time {
 
         // Normalize.
         let time = if nanos >= Self::NS_PER_SEC {
-            Self { seconds: seconds.checked_add(1)?, nanos: (nanos - Self::NS_PER_SEC) as u32 }
-        }
-        else if nanos < 0 {
-            Self { seconds: seconds.checked_sub(1)?, nanos: (nanos + Self::NS_PER_SEC) as u32 }
-        }
-        else {
-            Self { seconds, nanos: nanos as u32 }
+            Self {
+                seconds: seconds.checked_add(1)?,
+                nanos: (nanos - Self::NS_PER_SEC) as u32,
+            }
+        } else if nanos < 0 {
+            Self {
+                seconds: seconds.checked_sub(1)?,
+                nanos: (nanos + Self::NS_PER_SEC) as u32,
+            }
+        } else {
+            Self {
+                seconds,
+                nanos: nanos as u32,
+            }
         };
 
         Some(time)
@@ -907,19 +970,22 @@ impl Time {
 
 impl From<u8> for Time {
     fn from(seconds: u8) -> Self {
-        Time::try_new(i64::from(seconds), 0).expect("nanoseconds is 0, which is < 1_000_000_000")
+        // UNWRAP: Nanoseconds is < 1000000000.
+        Time::try_new(i64::from(seconds), 0).unwrap()
     }
 }
 
 impl From<u16> for Time {
     fn from(seconds: u16) -> Self {
-        Time::try_new(i64::from(seconds), 0).expect("nanoseconds is 0, which is < 1_000_000_000")
+        // UNWRAP: Nanoseconds is < 1000000000.
+        Time::try_new(i64::from(seconds), 0).unwrap()
     }
 }
 
 impl From<u32> for Time {
     fn from(seconds: u32) -> Self {
-        Time::try_new(i64::from(seconds), 0).expect("nanoseconds is 0, which is < 1_000_000_000")
+        // UNWRAP: Nanoseconds is < 1000000000.
+        Time::try_new(i64::from(seconds), 0).unwrap()
     }
 }
 
@@ -938,9 +1004,10 @@ pub struct TimeBase {
 
 impl Default for TimeBase {
     fn default() -> Self {
+        // UNWRAP: Never panics because 1 is non-zero.
         Self {
-            numer: NonZero::new(1).expect("1 is non-zero"),
-            denom: NonZero::new(1).expect("1 is non-zero"),
+            numer: NonZero::new(1).unwrap(),
+            denom: NonZero::new(1).unwrap(),
         }
     }
 }
@@ -960,14 +1027,22 @@ impl TimeBase {
 
     /// Create a timebase from the reciprocal of the provided rate.
     pub const fn from_recip(rate: NonZero<u32>) -> Self {
-        TimeBase { numer: NonZero::new(1).expect("1 is non-zero"), denom: rate }
+        // UNWRAP: Never panics because 1 is non-zero.
+        TimeBase {
+            numer: NonZero::new(1).unwrap(),
+            denom: rate,
+        }
     }
 
     /// Try to create a timebase from the reciprocal of the provided rate. Returns `None` if the
     /// rate is 0.
     pub fn try_from_recip(rate: u32) -> Option<Self> {
         let denom = NonZero::new(rate)?;
-        Some(TimeBase { numer: NonZero::new(1).expect("1 is non-zero"), denom })
+        // UNWRAP: Never panics because 1 is non-zero.
+        Some(TimeBase {
+            numer: NonZero::new(1).unwrap(),
+            denom,
+        })
     }
 
     /// Calculate a `Time` upto nanosecond precision from the provided `TimeStamp` using `self` as
@@ -979,13 +1054,14 @@ impl TimeBase {
         let numer = i64::from(self.numer.get());
         let denom = i64::from(self.denom.get());
 
-        if let Some(product) =
-            ts.get().checked_mul(numer).and_then(|x| x.checked_mul(NS_PER_SEC_64))
+        if let Some(product) = ts
+            .get()
+            .checked_mul(numer)
+            .and_then(|x| x.checked_mul(NS_PER_SEC_64))
         {
             let total_nanos = product / denom;
             Some(Time::from_nanos(total_nanos))
-        }
-        else {
+        } else {
             let product = i128::from(ts.get()) * i128::from(numer) * NS_PER_SEC_128;
             let total_nanos = product / i128::from(denom);
             Time::try_from_nanos_i128(total_nanos)
@@ -995,7 +1071,13 @@ impl TimeBase {
     /// Calculate a `Time` upto nanosecond precision from the provided `TimeStamp` using `self` as
     /// the conversion factor. Saturates if an overflow occurs.
     pub fn calc_time_saturating(&self, ts: Timestamp) -> Time {
-        self.calc_time(ts).unwrap_or_else(|| if ts.is_negative() { Time::MIN } else { Time::MAX })
+        self.calc_time(ts).unwrap_or_else(|| {
+            if ts.is_negative() {
+                Time::MIN
+            } else {
+                Time::MAX
+            }
+        })
     }
 
     /// Calculate a `TimeStamp` from the provided `Time` using `self` as the conversion factor.
@@ -1017,8 +1099,7 @@ impl TimeBase {
         {
             // Common case: Calculation can be done entirely in an i64.
             Some(Timestamp(ts))
-        }
-        else {
+        } else {
             // Fallback case: Calculation must be done in an i128.
             let whole = i128::from(time.seconds) * i128::from(denom);
             let ts = (whole + i128::from(frac)) / i128::from(numer);
@@ -1049,7 +1130,10 @@ impl TimeBase {
             return None;
         }
 
-        Some(TimeBase { numer: NonZero::new(numer as u32)?, denom: self.denom })
+        Some(TimeBase {
+            numer: NonZero::new(numer as u32)?,
+            denom: self.denom,
+        })
     }
 
     /// Reduce the timebase.
@@ -1068,10 +1152,12 @@ impl TimeBase {
             a
         };
 
-        // GCD is always <= numerator and denominator, so division cannot produce zero.
+        // Reduce the timebase.
+        // UNWRAP: Division by GCD cannot produce zero because the GCD is always <= the numerator
+        // and denominator.
         Self {
-            numer: NonZero::new(self.numer.get() / gcd).expect("gcd <= numer"),
-            denom: NonZero::new(self.denom.get() / gcd).expect("gcd <= denom"),
+            numer: NonZero::new(self.numer.get() / gcd).unwrap(),
+            denom: NonZero::new(self.denom.get() / gcd).unwrap(),
         }
     }
 }
@@ -1131,24 +1217,54 @@ mod tests {
         assert!(Time::try_new(-5, 1) < Time::try_new(-5, 2)); // -4.999_999_999 < -4.999_999_998
 
         // Decomposition
-        assert_eq!(Time::try_new(1, 750_000_000).unwrap().parts(), (1, 750_000_000)); // 1.75 s
-        assert_eq!(Time::try_new(0, 100_000_000).unwrap().parts(), (0, 100_000_000)); // 0.1 s
-        assert_eq!(Time::try_new(-2, 750_000_000).unwrap().parts(), (-1, 250_000_000)); // -1.25 s
+        assert_eq!(
+            Time::try_new(1, 750_000_000).unwrap().parts(),
+            (1, 750_000_000)
+        ); // 1.75 s
+        assert_eq!(
+            Time::try_new(0, 100_000_000).unwrap().parts(),
+            (0, 100_000_000)
+        ); // 0.1 s
+        assert_eq!(
+            Time::try_new(-2, 750_000_000).unwrap().parts(),
+            (-1, 250_000_000)
+        ); // -1.25 s
 
         // As nanoseconds.
-        assert_eq!(Time::try_new(100, 250_999_999).unwrap().as_nanos(), 100_250_999_999);
-        assert_eq!(Time::try_new(0, 100_999_999).unwrap().as_nanos(), 100_999_999);
-        assert_eq!(Time::try_new(-100, 250_999_999).unwrap().as_nanos(), -99_749_000_001);
+        assert_eq!(
+            Time::try_new(100, 250_999_999).unwrap().as_nanos(),
+            100_250_999_999
+        );
+        assert_eq!(
+            Time::try_new(0, 100_999_999).unwrap().as_nanos(),
+            100_999_999
+        );
+        assert_eq!(
+            Time::try_new(-100, 250_999_999).unwrap().as_nanos(),
+            -99_749_000_001
+        );
 
         // As whole microseconds.
-        assert_eq!(Time::try_new(100, 250_999_999).unwrap().as_micros(), 100_250_999);
+        assert_eq!(
+            Time::try_new(100, 250_999_999).unwrap().as_micros(),
+            100_250_999
+        );
         assert_eq!(Time::try_new(0, 100_999_999).unwrap().as_micros(), 100_999);
-        assert_eq!(Time::try_new(-100, 250_999_999).unwrap().as_micros(), -99_749_000);
+        assert_eq!(
+            Time::try_new(-100, 250_999_999).unwrap().as_micros(),
+            -99_749_000
+        );
 
         // As whole milliseconds.
-        assert_eq!(Time::try_new(100, 250_999_999).unwrap().as_millis(), 100_250);
+        assert_eq!(
+            Time::try_new(100, 250_999_999).unwrap().as_millis(),
+            100_250
+        );
         assert_eq!(Time::try_new(0, 100_999_999).unwrap().as_millis(), 100);
-        assert_eq!(Time::try_new(-100, 250_999_999).unwrap().as_millis(), -99_749);
+        assert_eq!(
+            Time::try_new(-100, 250_999_999).unwrap().as_millis(),
+            -99_749
+        );
 
         // As whole seconds.
         assert_eq!(Time::try_new(100, 250_000_000).unwrap().as_secs(), 100); // 100.25 s
@@ -1166,17 +1282,48 @@ mod tests {
         assert_eq!(Time::try_new(-3600, 1).unwrap().as_hours(), 0); // -3599.999999999 s
 
         // A floating-point seconds.
-        assert_eq!(Time::try_new(100, 250_000_000).unwrap().as_secs_f64(), 100.25);
+        assert_eq!(
+            Time::try_new(100, 250_000_000).unwrap().as_secs_f64(),
+            100.25
+        );
         assert_eq!(Time::try_new(0, 100_000_000).unwrap().as_secs_f64(), 0.1);
-        assert_eq!(Time::try_new(-100, 250_000_000).unwrap().as_secs_f64(), -99.75);
+        assert_eq!(
+            Time::try_new(-100, 250_000_000).unwrap().as_secs_f64(),
+            -99.75
+        );
 
         // Negation.
         assert_eq!(Time::default().checked_neg().unwrap(), Time::default());
-        assert_eq!(Time::try_new(-1, 0).unwrap().checked_neg().unwrap().as_millis(), 1000);
-        assert_eq!(Time::try_new(1, 0).unwrap().checked_neg().unwrap().as_millis(), -1000);
-        assert_eq!(Time::try_new(-1, 250_000_000).unwrap().checked_neg().unwrap().as_millis(), 750);
         assert_eq!(
-            Time::try_new(1, 250_000_000).unwrap().checked_neg().unwrap().as_millis(),
+            Time::try_new(-1, 0)
+                .unwrap()
+                .checked_neg()
+                .unwrap()
+                .as_millis(),
+            1000
+        );
+        assert_eq!(
+            Time::try_new(1, 0)
+                .unwrap()
+                .checked_neg()
+                .unwrap()
+                .as_millis(),
+            -1000
+        );
+        assert_eq!(
+            Time::try_new(-1, 250_000_000)
+                .unwrap()
+                .checked_neg()
+                .unwrap()
+                .as_millis(),
+            750
+        );
+        assert_eq!(
+            Time::try_new(1, 250_000_000)
+                .unwrap()
+                .checked_neg()
+                .unwrap()
+                .as_millis(),
             -1250
         );
         assert_eq!(Time::try_new(i64::MIN, 0).unwrap().checked_neg(), None);
@@ -1186,61 +1333,226 @@ mod tests {
         );
 
         // Add nanoseconds.
-        assert_eq!(Time::default().checked_add_nanos(1_250_000_000).unwrap().as_millis(), 1250);
-        assert_eq!(Time::default().checked_add_nanos(250_000_000).unwrap().as_millis(), 250);
+        assert_eq!(
+            Time::default()
+                .checked_add_nanos(1_250_000_000)
+                .unwrap()
+                .as_millis(),
+            1250
+        );
+        assert_eq!(
+            Time::default()
+                .checked_add_nanos(250_000_000)
+                .unwrap()
+                .as_millis(),
+            250
+        );
         assert_eq!(Time::default().checked_add_nanos(0).unwrap().as_millis(), 0);
-        assert_eq!(Time::default().checked_add_nanos(-250_000_000).unwrap().as_millis(), -250);
-        assert_eq!(Time::default().checked_add_nanos(-1_250_000_000).unwrap().as_millis(), -1250);
+        assert_eq!(
+            Time::default()
+                .checked_add_nanos(-250_000_000)
+                .unwrap()
+                .as_millis(),
+            -250
+        );
+        assert_eq!(
+            Time::default()
+                .checked_add_nanos(-1_250_000_000)
+                .unwrap()
+                .as_millis(),
+            -1250
+        );
 
         // Subtract nanoseconds.
-        assert_eq!(Time::default().checked_sub_nanos(1_250_000_000).unwrap().as_millis(), -1250);
-        assert_eq!(Time::default().checked_sub_nanos(250_000_000).unwrap().as_millis(), -250);
+        assert_eq!(
+            Time::default()
+                .checked_sub_nanos(1_250_000_000)
+                .unwrap()
+                .as_millis(),
+            -1250
+        );
+        assert_eq!(
+            Time::default()
+                .checked_sub_nanos(250_000_000)
+                .unwrap()
+                .as_millis(),
+            -250
+        );
         assert_eq!(Time::default().checked_sub_nanos(0).unwrap().as_millis(), 0);
-        assert_eq!(Time::default().checked_sub_nanos(-250_000_000).unwrap().as_millis(), 250);
-        assert_eq!(Time::default().checked_sub_nanos(-1_250_000_000).unwrap().as_millis(), 1250);
+        assert_eq!(
+            Time::default()
+                .checked_sub_nanos(-250_000_000)
+                .unwrap()
+                .as_millis(),
+            250
+        );
+        assert_eq!(
+            Time::default()
+                .checked_sub_nanos(-1_250_000_000)
+                .unwrap()
+                .as_millis(),
+            1250
+        );
 
         // Add microseconds.
-        assert_eq!(Time::default().checked_add_micros(1_250_000).unwrap().as_millis(), 1250);
-        assert_eq!(Time::default().checked_add_micros(250_000).unwrap().as_millis(), 250);
-        assert_eq!(Time::default().checked_add_micros(0).unwrap().as_millis(), 0);
-        assert_eq!(Time::default().checked_add_micros(-250_000).unwrap().as_millis(), -250);
-        assert_eq!(Time::default().checked_add_micros(-1_250_000).unwrap().as_millis(), -1250);
+        assert_eq!(
+            Time::default()
+                .checked_add_micros(1_250_000)
+                .unwrap()
+                .as_millis(),
+            1250
+        );
+        assert_eq!(
+            Time::default()
+                .checked_add_micros(250_000)
+                .unwrap()
+                .as_millis(),
+            250
+        );
+        assert_eq!(
+            Time::default().checked_add_micros(0).unwrap().as_millis(),
+            0
+        );
+        assert_eq!(
+            Time::default()
+                .checked_add_micros(-250_000)
+                .unwrap()
+                .as_millis(),
+            -250
+        );
+        assert_eq!(
+            Time::default()
+                .checked_add_micros(-1_250_000)
+                .unwrap()
+                .as_millis(),
+            -1250
+        );
 
         // Subtract microseconds.
-        assert_eq!(Time::default().checked_sub_micros(1_250_000).unwrap().as_millis(), -1250);
-        assert_eq!(Time::default().checked_sub_micros(250_000).unwrap().as_millis(), -250);
-        assert_eq!(Time::default().checked_sub_micros(0).unwrap().as_millis(), 0);
-        assert_eq!(Time::default().checked_sub_micros(-250_000).unwrap().as_millis(), 250);
-        assert_eq!(Time::default().checked_sub_micros(-1_250_000).unwrap().as_millis(), 1250);
+        assert_eq!(
+            Time::default()
+                .checked_sub_micros(1_250_000)
+                .unwrap()
+                .as_millis(),
+            -1250
+        );
+        assert_eq!(
+            Time::default()
+                .checked_sub_micros(250_000)
+                .unwrap()
+                .as_millis(),
+            -250
+        );
+        assert_eq!(
+            Time::default().checked_sub_micros(0).unwrap().as_millis(),
+            0
+        );
+        assert_eq!(
+            Time::default()
+                .checked_sub_micros(-250_000)
+                .unwrap()
+                .as_millis(),
+            250
+        );
+        assert_eq!(
+            Time::default()
+                .checked_sub_micros(-1_250_000)
+                .unwrap()
+                .as_millis(),
+            1250
+        );
 
         // Add milliseconds.
-        assert_eq!(Time::default().checked_add_millis(1_250).unwrap().as_millis(), 1250);
-        assert_eq!(Time::default().checked_add_millis(250).unwrap().as_millis(), 250);
-        assert_eq!(Time::default().checked_add_millis(0).unwrap().as_millis(), 0);
-        assert_eq!(Time::default().checked_add_millis(-250).unwrap().as_millis(), -250);
-        assert_eq!(Time::default().checked_add_millis(-1_250).unwrap().as_millis(), -1250);
+        assert_eq!(
+            Time::default()
+                .checked_add_millis(1_250)
+                .unwrap()
+                .as_millis(),
+            1250
+        );
+        assert_eq!(
+            Time::default().checked_add_millis(250).unwrap().as_millis(),
+            250
+        );
+        assert_eq!(
+            Time::default().checked_add_millis(0).unwrap().as_millis(),
+            0
+        );
+        assert_eq!(
+            Time::default()
+                .checked_add_millis(-250)
+                .unwrap()
+                .as_millis(),
+            -250
+        );
+        assert_eq!(
+            Time::default()
+                .checked_add_millis(-1_250)
+                .unwrap()
+                .as_millis(),
+            -1250
+        );
 
         // Subtract milliseconds.
-        assert_eq!(Time::default().checked_sub_millis(1_250).unwrap().as_millis(), -1250);
-        assert_eq!(Time::default().checked_sub_millis(250).unwrap().as_millis(), -250);
-        assert_eq!(Time::default().checked_sub_millis(0).unwrap().as_millis(), 0);
-        assert_eq!(Time::default().checked_sub_millis(-250).unwrap().as_millis(), 250);
-        assert_eq!(Time::default().checked_sub_millis(-1_250).unwrap().as_millis(), 1250);
+        assert_eq!(
+            Time::default()
+                .checked_sub_millis(1_250)
+                .unwrap()
+                .as_millis(),
+            -1250
+        );
+        assert_eq!(
+            Time::default().checked_sub_millis(250).unwrap().as_millis(),
+            -250
+        );
+        assert_eq!(
+            Time::default().checked_sub_millis(0).unwrap().as_millis(),
+            0
+        );
+        assert_eq!(
+            Time::default()
+                .checked_sub_millis(-250)
+                .unwrap()
+                .as_millis(),
+            250
+        );
+        assert_eq!(
+            Time::default()
+                .checked_sub_millis(-1_250)
+                .unwrap()
+                .as_millis(),
+            1250
+        );
 
         // Add seconds.
-        assert_eq!(Time::default().checked_add_secs(2).unwrap().as_millis(), 2000);
+        assert_eq!(
+            Time::default().checked_add_secs(2).unwrap().as_millis(),
+            2000
+        );
         assert_eq!(Time::default().checked_add_secs(0).unwrap().as_millis(), 0);
-        assert_eq!(Time::default().checked_add_secs(-2).unwrap().as_millis(), -2000);
+        assert_eq!(
+            Time::default().checked_add_secs(-2).unwrap().as_millis(),
+            -2000
+        );
 
         // Subtract seconds.
-        assert_eq!(Time::default().checked_sub_secs(2).unwrap().as_millis(), -2000);
+        assert_eq!(
+            Time::default().checked_sub_secs(2).unwrap().as_millis(),
+            -2000
+        );
         assert_eq!(Time::default().checked_sub_secs(0).unwrap().as_millis(), 0);
-        assert_eq!(Time::default().checked_sub_secs(-2).unwrap().as_millis(), 2000);
+        assert_eq!(
+            Time::default().checked_sub_secs(-2).unwrap().as_millis(),
+            2000
+        );
 
         // Add minutes.
         assert_eq!(Time::default().checked_add_mins(2).unwrap().as_secs(), 120);
         assert_eq!(Time::default().checked_add_mins(0).unwrap().as_secs(), 0);
-        assert_eq!(Time::default().checked_add_mins(-2).unwrap().as_secs(), -120);
+        assert_eq!(
+            Time::default().checked_add_mins(-2).unwrap().as_secs(),
+            -120
+        );
 
         // Subtract minutes.
         assert_eq!(Time::default().checked_sub_mins(2).unwrap().as_secs(), -120);
@@ -1248,14 +1560,26 @@ mod tests {
         assert_eq!(Time::default().checked_sub_mins(-2).unwrap().as_secs(), 120);
 
         // Add hours.
-        assert_eq!(Time::default().checked_add_hours(2).unwrap().as_secs(), 2 * 60 * 60);
+        assert_eq!(
+            Time::default().checked_add_hours(2).unwrap().as_secs(),
+            2 * 60 * 60
+        );
         assert_eq!(Time::default().checked_add_hours(0).unwrap().as_secs(), 0);
-        assert_eq!(Time::default().checked_add_hours(-2).unwrap().as_secs(), -2 * 60 * 60);
+        assert_eq!(
+            Time::default().checked_add_hours(-2).unwrap().as_secs(),
+            -2 * 60 * 60
+        );
 
         // Subtract hours.
-        assert_eq!(Time::default().checked_sub_hours(2).unwrap().as_secs(), -2 * 60 * 60);
+        assert_eq!(
+            Time::default().checked_sub_hours(2).unwrap().as_secs(),
+            -2 * 60 * 60
+        );
         assert_eq!(Time::default().checked_sub_hours(0).unwrap().as_secs(), 0);
-        assert_eq!(Time::default().checked_sub_hours(-2).unwrap().as_secs(), 2 * 60 * 60);
+        assert_eq!(
+            Time::default().checked_sub_hours(-2).unwrap().as_secs(),
+            2 * 60 * 60
+        );
     }
 
     #[test]
@@ -1263,7 +1587,10 @@ mod tests {
         let tb1 = TimeBase::try_new(1, 320).unwrap(); // 1 tick = 3.125 ms
         let tb2 = TimeBase::try_new(1_000_000, 320_000_000).unwrap(); // 1 tick = 3.125 ms
 
-        assert_eq!(tb1.calc_time(Timestamp::from(0)).unwrap(), Time::try_new(0, 0).unwrap());
+        assert_eq!(
+            tb1.calc_time(Timestamp::from(0)).unwrap(),
+            Time::try_new(0, 0).unwrap()
+        );
         assert_eq!(
             tb1.calc_time(Timestamp::from(i64::MAX)).unwrap(),
             Time::try_new(28823037615171174, 396875000).unwrap()
@@ -1277,7 +1604,10 @@ mod tests {
             Time::try_new(38, 578125000).unwrap()
         );
 
-        assert_eq!(tb2.calc_time(Timestamp::from(0)).unwrap(), Time::try_new(0, 0).unwrap());
+        assert_eq!(
+            tb2.calc_time(Timestamp::from(0)).unwrap(),
+            Time::try_new(0, 0).unwrap()
+        );
         assert_eq!(
             tb2.calc_time(Timestamp::from(i64::MAX)).unwrap(),
             Time::try_new(28823037615171174, 396875000).unwrap()
@@ -1291,7 +1621,10 @@ mod tests {
             Time::try_new(38, 578125000).unwrap()
         );
 
-        assert_eq!(Time::try_new(0, 0).unwrap(), tb1.calc_time(Timestamp::from(0)).unwrap());
+        assert_eq!(
+            Time::try_new(0, 0).unwrap(),
+            tb1.calc_time(Timestamp::from(0)).unwrap()
+        );
         assert_eq!(
             Time::try_new(28823037615171174, 396875000).unwrap(),
             tb1.calc_time(Timestamp::from(i64::MAX)).unwrap()
@@ -1305,7 +1638,10 @@ mod tests {
             tb1.calc_time(Timestamp::from(12345)).unwrap()
         );
 
-        assert_eq!(Time::try_new(0, 0).unwrap(), tb2.calc_time(Timestamp::from(0)).unwrap());
+        assert_eq!(
+            Time::try_new(0, 0).unwrap(),
+            tb2.calc_time(Timestamp::from(0)).unwrap()
+        );
         assert_eq!(
             Time::try_new(28823037615171174, 396875000).unwrap(),
             tb2.calc_time(Timestamp::from(i64::MAX)).unwrap()
@@ -1333,9 +1669,18 @@ mod tests {
     #[test]
     fn verify_timebase_reduce() {
         // Reduceable.
-        assert_eq!(TimeBase::try_new(42, 42).unwrap().reduce(), TimeBase::try_new(1, 1).unwrap());
-        assert_eq!(TimeBase::try_new(8, 12).unwrap().reduce(), TimeBase::try_new(2, 3).unwrap());
-        assert_eq!(TimeBase::try_new(100, 250).unwrap().reduce(), TimeBase::try_new(2, 5).unwrap());
+        assert_eq!(
+            TimeBase::try_new(42, 42).unwrap().reduce(),
+            TimeBase::try_new(1, 1).unwrap()
+        );
+        assert_eq!(
+            TimeBase::try_new(8, 12).unwrap().reduce(),
+            TimeBase::try_new(2, 3).unwrap()
+        );
+        assert_eq!(
+            TimeBase::try_new(100, 250).unwrap().reduce(),
+            TimeBase::try_new(2, 5).unwrap()
+        );
         assert_eq!(
             TimeBase::try_new(1000, 10000).unwrap().reduce(),
             TimeBase::try_new(1, 10).unwrap()
@@ -1344,24 +1689,41 @@ mod tests {
             TimeBase::try_new(10000, 1000).unwrap().reduce(),
             TimeBase::try_new(10, 1).unwrap()
         );
-        assert_eq!(TimeBase::try_new(24, 6).unwrap().reduce(), TimeBase::try_new(4, 1).unwrap());
-        assert_eq!(TimeBase::try_new(5, 25).unwrap().reduce(), TimeBase::try_new(1, 5).unwrap());
+        assert_eq!(
+            TimeBase::try_new(24, 6).unwrap().reduce(),
+            TimeBase::try_new(4, 1).unwrap()
+        );
+        assert_eq!(
+            TimeBase::try_new(5, 25).unwrap().reduce(),
+            TimeBase::try_new(1, 5).unwrap()
+        );
 
         // Unreduceable.
-        assert_eq!(TimeBase::try_new(1, 2).unwrap().reduce(), TimeBase::try_new(1, 2).unwrap());
-        assert_eq!(TimeBase::try_new(17, 29).unwrap().reduce(), TimeBase::try_new(17, 29).unwrap());
+        assert_eq!(
+            TimeBase::try_new(1, 2).unwrap().reduce(),
+            TimeBase::try_new(1, 2).unwrap()
+        );
+        assert_eq!(
+            TimeBase::try_new(17, 29).unwrap().reduce(),
+            TimeBase::try_new(17, 29).unwrap()
+        );
         assert_eq!(
             TimeBase::try_new(u32::MAX, u32::MAX - 1).unwrap().reduce(),
             TimeBase::try_new(u32::MAX, u32::MAX - 1).unwrap()
         );
         assert_eq!(
             // Worst-case with largest possible Fibonacci numbers.
-            TimeBase::try_new(2_971_215_073, 1_836_311_903).unwrap().reduce(),
+            TimeBase::try_new(2_971_215_073, 1_836_311_903)
+                .unwrap()
+                .reduce(),
             TimeBase::try_new(2_971_215_073, 1_836_311_903).unwrap()
         );
 
         // Extremes.
-        assert_eq!(TimeBase::try_new(1, 1).unwrap().reduce(), TimeBase::try_new(1, 1).unwrap());
+        assert_eq!(
+            TimeBase::try_new(1, 1).unwrap().reduce(),
+            TimeBase::try_new(1, 1).unwrap()
+        );
         assert_eq!(
             TimeBase::try_new(u32::MAX, 1).unwrap().reduce(),
             TimeBase::try_new(u32::MAX, 1).unwrap()
@@ -1406,7 +1768,9 @@ mod tests {
         ];
 
         fn test_roundtrip(ts: i64, tb: TimeBase) {
-            let time = tb.calc_time(Timestamp::from(ts)).expect("time should not overflow");
+            let time = tb
+                .calc_time(Timestamp::from(ts))
+                .expect("time should not overflow");
             let rtts = tb.calc_timestamp(time).expect("ticks should not overflow");
             let diff = rtts.get() - ts;
             // NOTE: `Time` only has nanosecond precision which may result in some remainder

@@ -9,13 +9,26 @@
 //!
 //! The complex (I)FFT in this module supports power-of-two sizes up-to 65536.
 
-#[cfg(any(feature = "opt-simd-sse", feature = "opt-simd-avx", feature = "opt-simd-neon"))]
+use std::prelude::v1::*;
+#[cfg(any(
+    feature = "opt-simd-sse",
+    feature = "opt-simd-avx",
+    feature = "opt-simd-neon"
+))]
 mod simd;
 
-#[cfg(any(feature = "opt-simd-sse", feature = "opt-simd-avx", feature = "opt-simd-neon"))]
+#[cfg(any(
+    feature = "opt-simd-sse",
+    feature = "opt-simd-avx",
+    feature = "opt-simd-neon"
+))]
 pub use simd::*;
 
-#[cfg(not(any(feature = "opt-simd-sse", feature = "opt-simd-avx", feature = "opt-simd-neon")))]
+#[cfg(not(any(
+    feature = "opt-simd-sse",
+    feature = "opt-simd-avx",
+    feature = "opt-simd-neon"
+)))]
 mod no_simd;
 #[cfg(not(any(
     feature = "opt-simd-sse",
@@ -59,7 +72,10 @@ mod tests {
                 im += (xre * wim) + (xim * wre);
             }
 
-            *y = Complex { re: re as f32, im: im as f32 };
+            *y = Complex {
+                re: re as f32,
+                im: im as f32,
+            };
         }
     }
 
@@ -67,14 +83,20 @@ mod tests {
     fn idft_naive(x: &[Complex<f32>], y: &mut [Complex<f32>]) {
         let n = x.len() as u64;
 
-        let z = x.iter().map(|x| Complex { re: x.im, im: x.re }).collect::<Vec<Complex<f32>>>();
+        let z = x
+            .iter()
+            .map(|x| Complex { re: x.im, im: x.re })
+            .collect::<Vec<Complex<f32>>>();
 
         dft_naive(&z, y);
 
         let c = 1.0 / n as f32;
 
         for y in y.iter_mut() {
-            *y = Complex { re: c * y.im, im: c * y.re };
+            *y = Complex {
+                re: c * y.im,
+                im: c * y.re,
+            };
         }
     }
 

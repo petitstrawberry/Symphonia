@@ -7,14 +7,17 @@
 
 #![warn(rust_2018_idioms)]
 #![forbid(unsafe_code)]
-// The following lints are allowed in all Symphonia crates. Please see clippy.toml for their
-// justification.
+#![no_std]
 #![allow(clippy::comparison_chain)]
 #![allow(clippy::excessive_precision)]
 #![allow(clippy::identity_op)]
 #![allow(clippy::manual_range_contains)]
 // TODO: Remove this when refactoring AAC.
 #![allow(clippy::needless_range_loop)]
+#![allow(unused_imports)]
+
+#[macro_use]
+extern crate alloc;
 
 mod aac;
 mod adts;

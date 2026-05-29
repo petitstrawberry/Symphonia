@@ -5,6 +5,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use std::prelude::v1::*;
 use symphonia_core::io::{ReadBitsLtr, vlc::*};
 
 use lazy_static::lazy_static;
@@ -467,17 +468,50 @@ struct VlcTable {
 }
 
 const SPECTRUM_TABLES: [VlcTable; 11] = [
-    VlcTable { codes: &SPECTRUM_CODEBOOK1_CODES, lens: &SPECTRUM_CODEBOOK1_LENS },
-    VlcTable { codes: &SPECTRUM_CODEBOOK2_CODES, lens: &SPECTRUM_CODEBOOK2_LENS },
-    VlcTable { codes: &SPECTRUM_CODEBOOK3_CODES, lens: &SPECTRUM_CODEBOOK3_LENS },
-    VlcTable { codes: &SPECTRUM_CODEBOOK4_CODES, lens: &SPECTRUM_CODEBOOK4_LENS },
-    VlcTable { codes: &SPECTRUM_CODEBOOK5_CODES, lens: &SPECTRUM_CODEBOOK5_LENS },
-    VlcTable { codes: &SPECTRUM_CODEBOOK6_CODES, lens: &SPECTRUM_CODEBOOK6_LENS },
-    VlcTable { codes: &SPECTRUM_CODEBOOK7_CODES, lens: &SPECTRUM_CODEBOOK7_LENS },
-    VlcTable { codes: &SPECTRUM_CODEBOOK8_CODES, lens: &SPECTRUM_CODEBOOK8_LENS },
-    VlcTable { codes: &SPECTRUM_CODEBOOK9_CODES, lens: &SPECTRUM_CODEBOOK9_LENS },
-    VlcTable { codes: &SPECTRUM_CODEBOOK10_CODES, lens: &SPECTRUM_CODEBOOK10_LENS },
-    VlcTable { codes: &SPECTRUM_CODEBOOK11_CODES, lens: &SPECTRUM_CODEBOOK11_LENS },
+    VlcTable {
+        codes: &SPECTRUM_CODEBOOK1_CODES,
+        lens: &SPECTRUM_CODEBOOK1_LENS,
+    },
+    VlcTable {
+        codes: &SPECTRUM_CODEBOOK2_CODES,
+        lens: &SPECTRUM_CODEBOOK2_LENS,
+    },
+    VlcTable {
+        codes: &SPECTRUM_CODEBOOK3_CODES,
+        lens: &SPECTRUM_CODEBOOK3_LENS,
+    },
+    VlcTable {
+        codes: &SPECTRUM_CODEBOOK4_CODES,
+        lens: &SPECTRUM_CODEBOOK4_LENS,
+    },
+    VlcTable {
+        codes: &SPECTRUM_CODEBOOK5_CODES,
+        lens: &SPECTRUM_CODEBOOK5_LENS,
+    },
+    VlcTable {
+        codes: &SPECTRUM_CODEBOOK6_CODES,
+        lens: &SPECTRUM_CODEBOOK6_LENS,
+    },
+    VlcTable {
+        codes: &SPECTRUM_CODEBOOK7_CODES,
+        lens: &SPECTRUM_CODEBOOK7_LENS,
+    },
+    VlcTable {
+        codes: &SPECTRUM_CODEBOOK8_CODES,
+        lens: &SPECTRUM_CODEBOOK8_LENS,
+    },
+    VlcTable {
+        codes: &SPECTRUM_CODEBOOK9_CODES,
+        lens: &SPECTRUM_CODEBOOK9_LENS,
+    },
+    VlcTable {
+        codes: &SPECTRUM_CODEBOOK10_CODES,
+        lens: &SPECTRUM_CODEBOOK10_LENS,
+    },
+    VlcTable {
+        codes: &SPECTRUM_CODEBOOK11_CODES,
+        lens: &SPECTRUM_CODEBOOK11_LENS,
+    },
 ];
 
 /// Make a codebook that returns the index of the read code.
@@ -501,7 +535,8 @@ pub struct QuadsCodebook {
 impl QuadsCodebook {
     #[inline(always)]
     pub fn read_quant<B: ReadBitsLtr>(&self, bs: &mut B) -> std::io::Result<(u8, u8, u8, u8)> {
-        bs.read_codebook(&self.codebook).map(|(cw, _)| AAC_QUADS[cw as usize])
+        bs.read_codebook(&self.codebook)
+            .map(|(cw, _)| AAC_QUADS[cw as usize])
     }
 }
 
@@ -523,7 +558,8 @@ pub struct PairsCodebook {
 impl PairsCodebook {
     #[inline(always)]
     pub fn read_dequant<B: ReadBitsLtr>(&self, bs: &mut B) -> std::io::Result<(f32, f32)> {
-        bs.read_codebook(&self.codebook).map(|(cw, _)| self.values[cw as usize])
+        bs.read_codebook(&self.codebook)
+            .map(|(cw, _)| self.values[cw as usize])
     }
 }
 
@@ -544,7 +580,8 @@ pub struct EscapeCodebook {
 impl EscapeCodebook {
     #[inline(always)]
     pub fn read_quant<B: ReadBitsLtr>(&self, bs: &mut B) -> std::io::Result<(u16, u16)> {
-        bs.read_codebook(&self.codebook).map(|(cw, _)| self.values[cw as usize])
+        bs.read_codebook(&self.codebook)
+            .map(|(cw, _)| self.values[cw as usize])
     }
 }
 
@@ -572,7 +609,7 @@ fn make_raw_codebook(table: &VlcTable) -> Codebook<Entry16x16> {
     // Read in 8-bit blocks.
     builder.bits_per_read(8);
 
-    builder.make(table.codes, table.lens, &indicies).expect("valid static codebook data")
+    builder.make(table.codes, table.lens, &indicies).unwrap()
 }
 
 /// Generate a codebook, but also generate a list of values for each variable length code using
@@ -610,8 +647,16 @@ fn signed_pair<const MOD: usize>(cw: usize) -> (f32, f32) {
     let a = cw / MOD;
     let b = cw % MOD;
 
-    let x = if modulo_2 > a { -iquant(modulo_2 - a) } else { iquant(a - modulo_2) };
-    let y = if modulo_2 > b { -iquant(modulo_2 - b) } else { iquant(b - modulo_2) };
+    let x = if modulo_2 > a {
+        -iquant(modulo_2 - a)
+    } else {
+        iquant(a - modulo_2)
+    };
+    let y = if modulo_2 > b {
+        -iquant(modulo_2 - b)
+    } else {
+        iquant(b - modulo_2)
+    };
 
     (x, y)
 }
@@ -664,6 +709,6 @@ lazy_static! {
         // Read in 8-bit blocks.
         builder.bits_per_read(8);
 
-        builder.make(&SCF_CODEBOOK_CODES, &SCF_CODEBOOK_LENS, &values).expect("valid static codebook data")
+        builder.make(&SCF_CODEBOOK_CODES, &SCF_CODEBOOK_LENS, &values).unwrap()
     };
 }

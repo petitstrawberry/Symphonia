@@ -12,6 +12,7 @@
 #![allow(clippy::identity_op)]
 #![allow(clippy::manual_range_contains)]
 
+use std::prelude::v1::*;
 pub mod audio;
 pub mod formats;
 pub mod video;

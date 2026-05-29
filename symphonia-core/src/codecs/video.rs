@@ -8,6 +8,7 @@
 //! Video decoder specific support.
 
 use std::fmt;
+use std::prelude::v1::*;
 
 #[cfg(feature = "exp-video-codecs")]
 use crate::codecs::CodecInfo;

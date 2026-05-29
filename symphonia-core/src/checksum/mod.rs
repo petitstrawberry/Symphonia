@@ -8,6 +8,7 @@
 //! The `checksum` module provides implementations of common error-detecting codes and hashing
 //! algorithms.
 
+use std::prelude::v1::*;
 mod crc16;
 mod crc32;
 mod crc8;

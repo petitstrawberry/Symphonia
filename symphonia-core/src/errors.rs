@@ -10,6 +10,7 @@
 use std::error;
 use std::fmt;
 use std::io;
+use std::prelude::v1::*;
 use std::result;
 
 /// `SeekErrorKind` is a list of generic reasons why a seek may fail.

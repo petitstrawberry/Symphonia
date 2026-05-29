@@ -9,6 +9,7 @@
 //! arbitrary media streams.
 
 use std::io::{Seek, SeekFrom};
+use std::prelude::v1::*;
 
 use crate::common::Tier;
 use crate::errors::{Error, Result, unsupported_error};
@@ -19,6 +20,7 @@ use crate::meta::{MetadataInfo, MetadataOptions, MetadataReader, MetadataSideDat
 use log::{debug, error, trace, warn};
 
 mod bloom {
+    use std::prelude::v1::*;
 
     fn fnv1a32(value: &[u8; 2]) -> u32 {
         const INIT: u32 = 0x811c_9dc5;
@@ -39,7 +41,9 @@ mod bloom {
 
     impl Default for BloomFilter {
         fn default() -> Self {
-            BloomFilter { filter: vec![0; BloomFilter::M >> 6].into_boxed_slice() }
+            BloomFilter {
+                filter: vec![0; BloomFilter::M >> 6].into_boxed_slice(),
+            }
         }
     }
 
@@ -266,7 +270,10 @@ pub struct Hint {
 impl Hint {
     /// Instantiate an empty `Hint`.
     pub fn new() -> Self {
-        Hint { extension: None, mime_type: None }
+        Hint {
+            extension: None,
+            mime_type: None,
+        }
     }
 
     /// Add a file extension hint.
@@ -327,7 +334,10 @@ impl Probe {
 
     /// Instantiate a probe with custom options.
     pub fn new_with_options(opts: &ProbeOptions) -> Self {
-        Probe { opts: *opts, ..Default::default() }
+        Probe {
+            opts: *opts,
+            ..Default::default()
+        }
     }
 
     /// Register the parameterized format reader at the standard tier.
@@ -493,7 +503,11 @@ impl Probe {
                 continue;
             }
 
-            trace!("probing for trailing metadata at offset -{} ({})", anchor, end - anchor);
+            trace!(
+                "probing for trailing metadata at offset -{} ({})",
+                anchor,
+                end - anchor
+            );
 
             // Seek to the anchor point. In this best case, this seek will only invalidate the
             // lookahead buffer once for the first anchor, and then seek around the lookahead buffer
@@ -588,8 +602,7 @@ impl Probe {
 
         if count < self.opts.max_probe_depth {
             error!("probe reached EOF at {count} bytes");
-        }
-        else {
+        } else {
             // Could not find any marker within the probe limit.
             error!("reached probe limit of {} bytes", self.opts.max_probe_depth);
         }
@@ -613,23 +626,35 @@ impl Probe {
         // TODO: Only pass &win[..win_len].
 
         // Try to find a descriptor in the preferred tier.
-        if let Some(inst) =
-            find_reader(mss, &self.preferred, win, self.opts.max_score_depth, is_trailing)?
-        {
+        if let Some(inst) = find_reader(
+            mss,
+            &self.preferred,
+            win,
+            self.opts.max_score_depth,
+            is_trailing,
+        )? {
             return Ok(Some(inst));
         }
 
         // Try to find a descriptor in the standard tier.
-        if let Some(inst) =
-            find_reader(mss, &self.standard, win, self.opts.max_score_depth, is_trailing)?
-        {
+        if let Some(inst) = find_reader(
+            mss,
+            &self.standard,
+            win,
+            self.opts.max_score_depth,
+            is_trailing,
+        )? {
             return Ok(Some(inst));
         }
 
         // Try to find a descriptor in the fallback tier.
-        if let Some(inst) =
-            find_reader(mss, &self.fallback, win, self.opts.max_score_depth, is_trailing)?
-        {
+        if let Some(inst) = find_reader(
+            mss,
+            &self.fallback,
+            win,
+            self.opts.max_score_depth,
+            is_trailing,
+        )? {
             return Ok(Some(inst));
         }
 
@@ -647,7 +672,11 @@ fn read_and_append_metadata<'s>(
     debug!("appending '{}' metadata", reader.metadata_info().short_name);
 
     // Append it to the metadata log.
-    fmt_opts.external_data.metadata.get_or_insert_with(Default::default).push(metadata.revision);
+    fmt_opts
+        .external_data
+        .metadata
+        .get_or_insert_with(Default::default)
+        .push(metadata.revision);
 
     // Append relevant side data.
     for side_data in metadata.side_data {
@@ -681,7 +710,11 @@ fn find_reader(
             let is_match = win[0..marker.len()] == **marker;
 
             if is_match {
-                trace!("found the marker {:x?} @ {} bytes", &win[0..marker.len()], mss.pos());
+                trace!(
+                    "found the marker {:x?} @ {} bytes",
+                    &win[0..marker.len()],
+                    mss.pos()
+                );
             }
 
             is_match
@@ -693,7 +726,10 @@ fn find_reader(
             if let Score::Supported(score) = score(desc, mss, max_depth)? {
                 match &desc.specific {
                     ProbeMatch::Format { info, .. } => {
-                        debug!("selected format reader '{}' with score {}", info.short_name, score)
+                        debug!(
+                            "selected format reader '{}' with score {}",
+                            info.short_name, score
+                        )
                     }
                     ProbeMatch::Metadata { info, .. } => {
                         debug!(

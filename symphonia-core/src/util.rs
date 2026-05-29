@@ -11,6 +11,7 @@
 //! If a function is used all-over the codebase, and does not belong to specific top-level module,
 //! it should be placed here.
 
+use std::prelude::v1::*;
 pub mod bits {
     //! Utilities for bit manipulation.
 
@@ -188,8 +189,7 @@ pub mod clamp {
         // limits of an i8.
         if val.wrapping_add(0x80) & !0xff == 0 {
             val as i8
-        }
-        else {
+        } else {
             // The given value was determined to be outside the valid numerical range of i8.
             //
             // Shift right all the magnitude bits of val, leaving val to be either 0xff if val was
@@ -205,7 +205,11 @@ pub mod clamp {
     /// Clamps the given value to the [0, 65_535] range.
     #[inline]
     pub fn clamp_u16(val: u32) -> u16 {
-        if val & !0xffff == 0 { val as u16 } else { 0xffff }
+        if val & !0xffff == 0 {
+            val as u16
+        } else {
+            0xffff
+        }
     }
 
     /// Clamps the given value to the [-32_767, 32_768] range.
@@ -213,8 +217,7 @@ pub mod clamp {
     pub fn clamp_i16(val: i32) -> i16 {
         if val.wrapping_add(0x8000) & !0xffff == 0 {
             val as i16
-        }
-        else {
+        } else {
             0x7fff ^ val.wrapping_shr(31) as i16
         }
     }
@@ -222,7 +225,11 @@ pub mod clamp {
     /// Clamps the given value to the [0, 16_777_215] range.
     #[inline]
     pub fn clamp_u24(val: u32) -> u32 {
-        if val & !0x00ff_ffff == 0 { val } else { 0x00ff_ffff }
+        if val & !0x00ff_ffff == 0 {
+            val
+        } else {
+            0x00ff_ffff
+        }
     }
 
     /// Clamps the given value to the [-8_388_608, 8_388_607] range.
@@ -230,8 +237,7 @@ pub mod clamp {
     pub fn clamp_i24(val: i32) -> i32 {
         if val.wrapping_add(0x0080_0000) & !0x00ff_ffff == 0 {
             val
-        }
-        else {
+        } else {
             0x007f_ffff ^ val.wrapping_shr(31)
         }
     }
@@ -239,7 +245,11 @@ pub mod clamp {
     /// Clamps the given value to the [0, 4_294_967_295] range.
     #[inline]
     pub fn clamp_u32(val: u64) -> u32 {
-        if val & !0xffff_ffff == 0 { val as u32 } else { 0xffff_ffff }
+        if val & !0xffff_ffff == 0 {
+            val as u32
+        } else {
+            0xffff_ffff
+        }
     }
 
     /// Clamps the given value to the [-2_147_483_648, 2_147_483_647] range.
@@ -247,8 +257,7 @@ pub mod clamp {
     pub fn clamp_i32(val: i64) -> i32 {
         if val.wrapping_add(0x8000_0000) & !0xffff_ffff == 0 {
             val as i32
-        }
-        else {
+        } else {
             0x7fff_ffff ^ val.wrapping_shr(63) as i32
         }
     }
@@ -331,7 +340,13 @@ pub mod text {
     ///
     /// Invalid characters are substituted with the Unicode `U+FFFD REPLACEMENT CHARACTER` (�).
     pub fn decode_ascii_lossy(buf: &[u8]) -> impl Iterator<Item = char> + '_ {
-        buf.iter().map(|&c| if c.is_ascii() { char::from(c) } else { char::REPLACEMENT_CHARACTER })
+        buf.iter().map(|&c| {
+            if c.is_ascii() {
+                char::from(c)
+            } else {
+                char::REPLACEMENT_CHARACTER
+            }
+        })
     }
 
     /// Create an iterator over ISO/IEC 8859-1 encoded characters in `buf`.
@@ -461,9 +476,8 @@ pub mod text {
     fn decode_utf16_bytes(buf: &[u8], f: fn([u8; 2]) -> u16) -> impl Iterator<Item = char> + '_ {
         // TODO: Use `buf.array_chunks::<2>()` when stabilized.
         char::decode_utf16(
-            buf.chunks_exact(2).map(move |bytes| {
-                f(bytes.try_into().expect("chunks_exact(2) yields exactly 2 bytes"))
-            }),
+            buf.chunks_exact(2)
+                .map(move |bytes| f(bytes.try_into().unwrap())),
         )
         .map(|r| r.unwrap_or(char::REPLACEMENT_CHARACTER))
     }
@@ -550,8 +564,14 @@ pub mod text {
             use super::decode_utf16be_lossy;
 
             assert_eq!(decode_utf16be_lossy(&[]).collect::<String>(), String::new());
-            assert_eq!(decode_utf16be_lossy(&[b' ']).collect::<String>(), String::new());
-            assert_eq!(decode_utf16be_lossy(&[0x00, 0x20]).collect::<String>(), String::from(" "));
+            assert_eq!(
+                decode_utf16be_lossy(&[b' ']).collect::<String>(),
+                String::new()
+            );
+            assert_eq!(
+                decode_utf16be_lossy(&[0x00, 0x20]).collect::<String>(),
+                String::from(" ")
+            );
 
             // Little-endian forced by BOM.
             assert_eq!(
@@ -575,8 +595,14 @@ pub mod text {
             use super::decode_utf16le_lossy;
 
             assert_eq!(decode_utf16le_lossy(&[]).collect::<String>(), String::new());
-            assert_eq!(decode_utf16le_lossy(&[b' ']).collect::<String>(), String::new());
-            assert_eq!(decode_utf16le_lossy(&[0x20, 0x00]).collect::<String>(), String::from(" "));
+            assert_eq!(
+                decode_utf16le_lossy(&[b' ']).collect::<String>(),
+                String::new()
+            );
+            assert_eq!(
+                decode_utf16le_lossy(&[0x20, 0x00]).collect::<String>(),
+                String::from(" ")
+            );
 
             // Big-endian forced by BOM.
             assert_eq!(

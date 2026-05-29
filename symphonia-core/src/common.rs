@@ -8,6 +8,7 @@
 //! The `common` module defines common enums, structs, types, etc.
 
 use std::fmt;
+use std::prelude::v1::*;
 
 /// A four character code.
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
@@ -21,7 +22,10 @@ impl FourCc {
     ///
     /// Panics if the byte array contains a non-ASCII character.
     pub const fn new(val: [u8; 4]) -> Self {
-        assert!(val.is_ascii(), "only ASCII characters are allowed in a FourCc");
+        assert!(
+            val.is_ascii(),
+            "only ASCII characters are allowed in a FourCc"
+        );
         Self(val)
     }
 
@@ -30,7 +34,11 @@ impl FourCc {
     /// A FourCC cannot contain non-ASCII characters. If a non-ASCII character is found, `None` is
     /// returned.
     pub const fn try_new(val: [u8; 4]) -> Option<Self> {
-        if val.is_ascii() { Some(Self(val)) } else { None }
+        if val.is_ascii() {
+            Some(Self(val))
+        } else {
+            None
+        }
     }
 
     /// Returns the contained byte array.

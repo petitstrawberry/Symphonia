@@ -54,6 +54,7 @@ use std::collections::VecDeque;
 use std::convert::From;
 use std::fmt;
 use std::num::NonZeroU8;
+use std::prelude::v1::*;
 use std::sync::Arc;
 
 use crate::common::{FourCc, Limit};
@@ -459,8 +460,16 @@ fn buffer_to_hex_string(buf: &[u8]) -> String {
         let u = (ch & 0xf0) >> 4;
         let l = ch & 0x0f;
         output.push_str("\\0x");
-        output.push(if u < 10 { (b'0' + u) as char } else { (b'a' + u - 10) as char });
-        output.push(if l < 10 { (b'0' + l) as char } else { (b'a' + l - 10) as char });
+        output.push(if u < 10 {
+            (b'0' + u) as char
+        } else {
+            (b'a' + u - 10) as char
+        });
+        output.push(if l < 10 {
+            (b'0' + l) as char
+        } else {
+            (b'a' + l - 10) as char
+        });
     }
 
     output
@@ -498,7 +507,10 @@ impl RawTagSubField {
         F: Into<String>,
         V: Into<RawValue>,
     {
-        RawTagSubField { field: field.into(), value: value.into() }
+        RawTagSubField {
+            field: field.into(),
+            value: value.into(),
+        }
     }
 }
 
@@ -522,7 +534,11 @@ impl RawTag {
         K: Into<String>,
         V: Into<RawValue>,
     {
-        RawTag { key: key.into(), value: value.into(), sub_fields: None }
+        RawTag {
+            key: key.into(),
+            value: value.into(),
+            sub_fields: None,
+        }
     }
 
     /// Create a new raw tag with sub-fields from the provided key, value, and sub-fields. Consumes
@@ -532,7 +548,11 @@ impl RawTag {
         K: Into<String>,
         V: Into<RawValue>,
     {
-        RawTag { key: key.into(), value: value.into(), sub_fields: Some(sub_fields) }
+        RawTag {
+            key: key.into(),
+            value: value.into(),
+            sub_fields: Some(sub_fields),
+        }
     }
 }
 
@@ -553,7 +573,10 @@ impl Tag {
 
     /// Create a new tag from a raw tag with a standard tag. Consumes the inputs.
     pub fn new_std(raw: RawTag, std: StandardTag) -> Self {
-        Tag { raw, std: Some(std) }
+        Tag {
+            raw,
+            std: Some(std),
+        }
     }
 
     /// Create a new tag from its constituent parts: a key, value, and optional standard tag.
@@ -563,7 +586,14 @@ impl Tag {
         K: Into<String>,
         V: Into<RawValue>,
     {
-        Tag { raw: RawTag { key: key.into(), value: value.into(), sub_fields: None }, std }
+        Tag {
+            raw: RawTag {
+                key: key.into(),
+                value: value.into(),
+                sub_fields: None,
+            },
+            std,
+        }
     }
 
     /// Returns `true` if the tag was recognized as a well-known tag and has a standard tag
@@ -744,8 +774,11 @@ pub struct MetadataBuilder {
 impl MetadataBuilder {
     /// Instantiate a new `MetadataBuilder`.
     pub fn new(info: MetadataInfo) -> Self {
-        let revision =
-            MetadataRevision { info, media: Default::default(), per_track: Default::default() };
+        let revision = MetadataRevision {
+            info,
+            media: Default::default(),
+            per_track: Default::default(),
+        };
         MetadataBuilder { revision }
     }
 
@@ -783,7 +816,10 @@ impl PerTrackMetadataBuilder {
     /// Instantiate a new `MetadataBuilder`.
     pub fn new(track_id: u64) -> Self {
         PerTrackMetadataBuilder {
-            per_track: PerTrackMetadata { track_id, metadata: Default::default() },
+            per_track: PerTrackMetadata {
+                track_id,
+                metadata: Default::default(),
+            },
         }
     }
 
@@ -838,7 +874,11 @@ impl Metadata<'_> {
     /// `Metadata`. When there are no newer revisions, `None` is returned. As such, `pop` will never
     /// completely empty the log.
     pub fn pop(&mut self) -> Option<MetadataRevision> {
-        if self.revisions.len() > 1 { self.revisions.pop_front() } else { None }
+        if self.revisions.len() > 1 {
+            self.revisions.pop_front()
+        } else {
+            None
+        }
     }
 }
 
@@ -851,7 +891,9 @@ pub struct MetadataLog {
 impl MetadataLog {
     /// Returns a reference to the metadata revisions inside the log.
     pub fn metadata(&mut self) -> Metadata<'_> {
-        Metadata { revisions: &mut self.revisions }
+        Metadata {
+            revisions: &mut self.revisions,
+        }
     }
 
     /// Push a new metadata revision to the end of the log.

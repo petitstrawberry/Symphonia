@@ -7,6 +7,7 @@
 
 //! The `conv` module provides methods to convert samples between different sample types (formats).
 use crate::audio::sample::{Sample, i24, u24};
+use std::prelude::v1::*;
 
 pub mod dither {
     //! The `dither` module provides methods to apply a dither to a sample.
@@ -158,7 +159,10 @@ pub mod dither {
 
     impl<F: Sample, T: Sample> Identity<F, T> {
         pub fn new() -> Self {
-            Identity { from_type: PhantomData, to_type: PhantomData }
+            Identity {
+                from_type: PhantomData,
+                to_type: PhantomData,
+            }
         }
     }
 
@@ -540,7 +544,12 @@ impl_convert!(u8, u32, s, (s as u32) << 24); // u32
 
 impl_convert!(u8, i8, s, s.wrapping_sub(0x80) as i8); // i8
 impl_convert!(u8, i16, s, ((s.wrapping_sub(0x80) as i8) as i16) << 8); // i16
-impl_convert!(u8, i24, s, i24::from(((s.wrapping_sub(0x80) as i8) as i32) << 16)); // i24
+impl_convert!(
+    u8,
+    i24,
+    s,
+    i24::from(((s.wrapping_sub(0x80) as i8) as i32) << 16)
+); // i24
 impl_convert!(u8, i32, s, ((s.wrapping_sub(0x80) as i8) as i32) << 24); // i32
 
 impl_convert!(u8, f32, s, ((s as f32) / 128.0) - 1.0); // f32
@@ -555,7 +564,12 @@ impl_convert!(u16, u32, s, (s as u32) << 16); // u32
 
 impl_convert!(u16, i8, s, (s.wrapping_sub(0x8000) >> 8) as i8); // i8
 impl_convert!(u16, i16, s, s.wrapping_sub(0x8000) as i16); // i16
-impl_convert!(u16, i24, s, i24::from(((s.wrapping_sub(0x8000) as i16) as i32) << 8)); // i24
+impl_convert!(
+    u16,
+    i24,
+    s,
+    i24::from(((s.wrapping_sub(0x8000) as i16) as i32) << 8)
+); // i24
 impl_convert!(u16, i32, s, ((s.wrapping_sub(0x8000) as i16) as i32) << 16); // i32
 
 impl_convert!(u16, f32, s, ((s as f32) / 32_768.0) - 1.0); // f32
@@ -568,13 +582,43 @@ impl_convert!(u24, u16, s, (s.clamped().inner() >> 8) as u16); // u16
 impl_convert!(u24, u24, s, s); // u24
 impl_convert!(u24, u32, s, s.clamped().inner() << 8); // u32
 
-impl_convert!(u24, i8, s, (s.clamped().inner().wrapping_sub(0x80_0000) >> 16) as i8); // i8
-impl_convert!(u24, i16, s, (s.clamped().inner().wrapping_sub(0x80_0000) >> 8) as i16); // i16
-impl_convert!(u24, i24, s, i24::from(s.clamped().inner().wrapping_sub(0x80_0000) as i32)); // i24
-impl_convert!(u24, i32, s, (s.clamped().inner().wrapping_sub(0x80_0000) << 8) as i32); // i32
+impl_convert!(
+    u24,
+    i8,
+    s,
+    (s.clamped().inner().wrapping_sub(0x80_0000) >> 16) as i8
+); // i8
+impl_convert!(
+    u24,
+    i16,
+    s,
+    (s.clamped().inner().wrapping_sub(0x80_0000) >> 8) as i16
+); // i16
+impl_convert!(
+    u24,
+    i24,
+    s,
+    i24::from(s.clamped().inner().wrapping_sub(0x80_0000) as i32)
+); // i24
+impl_convert!(
+    u24,
+    i32,
+    s,
+    (s.clamped().inner().wrapping_sub(0x80_0000) << 8) as i32
+); // i32
 
-impl_convert!(u24, f32, s, ((s.clamped().inner() as f32) / 8_388_608.0) - 1.0); // f32
-impl_convert!(u24, f64, s, ((s.clamped().inner() as f64) / 8_388_608.0) - 1.0); // f64
+impl_convert!(
+    u24,
+    f32,
+    s,
+    ((s.clamped().inner() as f32) / 8_388_608.0) - 1.0
+); // f32
+impl_convert!(
+    u24,
+    f64,
+    s,
+    ((s.clamped().inner() as f64) / 8_388_608.0) - 1.0
+); // f64
 
 // u32 to ...
 
@@ -585,7 +629,12 @@ impl_convert!(u32, u32, s, s); // u32
 
 impl_convert!(u32, i8, s, (s.wrapping_sub(0x8000_0000) >> 24) as i8); // i8
 impl_convert!(u32, i16, s, (s.wrapping_sub(0x8000_0000) >> 16) as i16); // i16
-impl_convert!(u32, i24, s, i24::from((s.wrapping_sub(0x8000_0000) as i32) >> 8)); // i24
+impl_convert!(
+    u32,
+    i24,
+    s,
+    i24::from((s.wrapping_sub(0x8000_0000) as i32) >> 8)
+); // i24
 impl_convert!(u32, i32, s, s.wrapping_sub(0x8000_0000) as i32); // i32
 
 impl_convert!(u32, f32, s, (((s as f64) / 2_147_483_648.0) - 1.0) as f32); // f32
@@ -595,8 +644,18 @@ impl_convert!(u32, f64, s, ((s as f64) / 2_147_483_648.0) - 1.0); // f64
 
 impl_convert!(f32, u8, s, ((s.clamped() + 1.0) * 128.0) as u8); // u8
 impl_convert!(f32, u16, s, ((s.clamped() + 1.0) * 32_768.0) as u16); // u16
-impl_convert!(f32, u24, s, u24::from(((s.clamped() + 1.0) * 8_388_608.0) as u32)); // u24
-impl_convert!(f32, u32, s, ((s.clamped() + 1.0) as f64 * 2_147_483_648.0) as u32); // u32
+impl_convert!(
+    f32,
+    u24,
+    s,
+    u24::from(((s.clamped() + 1.0) * 8_388_608.0) as u32)
+); // u24
+impl_convert!(
+    f32,
+    u32,
+    s,
+    ((s.clamped() + 1.0) as f64 * 2_147_483_648.0) as u32
+); // u32
 
 impl_convert!(f32, i8, s, (s.clamped() * 128.0) as i8); // i8
 impl_convert!(f32, i16, s, (s.clamped() * 32_768.0) as i16); // i16
@@ -610,7 +669,12 @@ impl_convert!(f32, f64, s, s as f64); // f64
 
 impl_convert!(f64, u8, s, ((s.clamped() + 1.0) * 128.0) as u8); // u8
 impl_convert!(f64, u16, s, ((s.clamped() + 1.0) * 32_768.0) as u16); // u16
-impl_convert!(f64, u24, s, u24::from(((s.clamped() + 1.0) * 8_388_608.0) as u32)); // u24
+impl_convert!(
+    f64,
+    u24,
+    s,
+    u24::from(((s.clamped() + 1.0) * 8_388_608.0) as u32)
+); // u24
 impl_convert!(f64, u32, s, ((s.clamped() + 1.0) * 2_147_483_648.0) as u32); // u32
 
 impl_convert!(f64, i8, s, (s.clamped() * 128.0) as i8); // i8
@@ -1034,7 +1098,10 @@ mod tests {
         assert_eq!(f64::from_sample(u24::MID), 0.0);
         assert_eq!(f64::from_sample(u24::MIN), -1.0);
 
-        assert_eq!(f64::from_sample(u32::MAX), 2_147_483_647.0 / 2_147_483_648.0);
+        assert_eq!(
+            f64::from_sample(u32::MAX),
+            2_147_483_647.0 / 2_147_483_648.0
+        );
         assert_eq!(f64::from_sample(u32::MID), 0.0);
         assert_eq!(f64::from_sample(u32::MIN), -1.0);
 
@@ -1050,7 +1117,10 @@ mod tests {
         assert_eq!(f64::from_sample(i24::MID), 0.0);
         assert_eq!(f64::from_sample(i24::MIN), -1.0);
 
-        assert_eq!(f64::from_sample(i32::MAX), 2_147_483_647.0 / 2_147_483_648.0);
+        assert_eq!(
+            f64::from_sample(i32::MAX),
+            2_147_483_647.0 / 2_147_483_648.0
+        );
         assert_eq!(f64::from_sample(i32::MID), 0.0);
         assert_eq!(f64::from_sample(i32::MIN), -1.0);
 
@@ -1077,7 +1147,10 @@ mod tests {
         assert_eq!(f32::from_sample(u24::MID), 0.0);
         assert_eq!(f32::from_sample(u24::MIN), -1.0);
 
-        assert_eq!(f32::from_sample(u32::MAX), 2_147_483_647.0 / 2_147_483_648.0);
+        assert_eq!(
+            f32::from_sample(u32::MAX),
+            2_147_483_647.0 / 2_147_483_648.0
+        );
         assert_eq!(f32::from_sample(u32::MID), 0.0);
         assert_eq!(f32::from_sample(u32::MIN), -1.0);
 
@@ -1093,7 +1166,10 @@ mod tests {
         assert_eq!(f32::from_sample(i24::MID), 0.0);
         assert_eq!(f32::from_sample(i24::MIN), -1.0);
 
-        assert_eq!(f32::from_sample(i32::MAX), 2_147_483_647.0 / 2_147_483_648.0);
+        assert_eq!(
+            f32::from_sample(i32::MAX),
+            2_147_483_647.0 / 2_147_483_648.0
+        );
         assert_eq!(f32::from_sample(i32::MID), 0.0);
         assert_eq!(f32::from_sample(i32::MIN), -1.0);
 

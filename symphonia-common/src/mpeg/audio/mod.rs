@@ -5,6 +5,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use std::prelude::v1::*;
 use symphonia_core::audio::{Channels, layouts};
 use symphonia_core::codecs::CodecProfile;
 use symphonia_core::codecs::audio::well_known::profiles::*;
@@ -176,8 +177,9 @@ pub enum Mpeg4AudioSampleRate {
 
 /// Try to get the audio sample rate given the sample rate index.
 pub fn get_mpeg4_audio_sample_rate_by_index(index: u32) -> Mpeg4AudioSampleRate {
-    const MPEG4_AUDIO_SAMPLE_RATES: [u32; 13] =
-        [96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350];
+    const MPEG4_AUDIO_SAMPLE_RATES: [u32; 13] = [
+        96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350,
+    ];
 
     match index {
         0..=12 => Mpeg4AudioSampleRate::SampleRate(MPEG4_AUDIO_SAMPLE_RATES[index as usize]),
@@ -253,8 +255,7 @@ impl AudioSpecificConfig {
 
             let ext_chans = if asc.object_type == AudioObjectType::ErBsac {
                 Self::read_channel_config(&mut bs)?
-            }
-            else {
+            } else {
                 None
             };
 
@@ -434,7 +435,10 @@ impl AudioSpecificConfig {
             _ => unreachable!(),
         };
 
-        let aot = AUDIO_OBJECT_TYPES.get(index).copied().unwrap_or(AudioObjectType::Unknown);
+        let aot = AUDIO_OBJECT_TYPES
+            .get(index)
+            .copied()
+            .unwrap_or(AudioObjectType::Unknown);
 
         Ok(aot)
     }
@@ -472,11 +476,9 @@ pub fn get_audio_codec_profile(asc: &AudioSpecificConfig) -> Option<CodecProfile
         AudioObjectType::Lc => {
             if asc.ps_present {
                 Some(CODEC_PROFILE_AAC_HE_V2)
-            }
-            else if asc.sbr_present {
+            } else if asc.sbr_present {
                 Some(CODEC_PROFILE_AAC_HE)
-            }
-            else {
+            } else {
                 Some(CODEC_PROFILE_AAC_LC)
             }
         }

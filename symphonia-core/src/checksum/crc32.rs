@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::io::Monitor;
+use std::prelude::v1::*;
 
 #[rustfmt::skip]
 const CRC32: [[u32; 256]; 8] =

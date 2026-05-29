@@ -21,6 +21,7 @@
 
 use std::io;
 use std::mem;
+use std::prelude::v1::*;
 
 mod bit;
 mod buf_reader;

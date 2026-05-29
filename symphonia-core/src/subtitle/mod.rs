@@ -7,6 +7,7 @@
 
 //! The `subtitle` module provides primitives for working with text-based and rendered subtitles.
 
+use std::prelude::v1::*;
 pub struct RawTextSubtitleBuffer {}
 pub struct PlainTextSubtitleBuffer {}
 pub struct RenderedSubtitleBuffer {}

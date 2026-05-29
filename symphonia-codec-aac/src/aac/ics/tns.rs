@@ -11,6 +11,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use std::prelude::v1::*;
 use symphonia_core::errors::Result;
 use symphonia_core::io::ReadBitsLtr;
 
@@ -33,7 +34,12 @@ struct TnsCoeffs {
 
 impl TnsCoeffs {
     fn new() -> Self {
-        Self { length: 0, order: 0, direction: false, coef: [0.0; TNS_MAX_ORDER + 1] }
+        Self {
+            length: 0,
+            order: 0,
+            direction: false,
+            coef: [0.0; TNS_MAX_ORDER + 1],
+        }
     }
 
     fn read<B: ReadBitsLtr>(
@@ -80,8 +86,7 @@ impl TnsCoeffs {
                 // Convert to signed integer.
                 let c = f32::from(if (val & sign_mask) != 0 {
                     (val | neg_mask) as i8
-                }
-                else {
+                } else {
                     val as i8
                 });
 
@@ -122,11 +127,9 @@ impl Tns {
         // Table 4.156
         let max_order = if !info.long_win {
             7
-        }
-        else if is_lc {
+        } else if is_lc {
             12
-        }
-        else {
+        } else {
             TNS_MAX_ORDER
         };
 
@@ -136,7 +139,11 @@ impl Tns {
         for w in 0..info.num_windows {
             n_filt[w] = bs.read_bits_leq32(if info.long_win { 2 } else { 1 })? as usize;
 
-            let coef_res = if n_filt[w] != 0 { bs.read_bool()? } else { false };
+            let coef_res = if n_filt[w] != 0 {
+                bs.read_bool()?
+            } else {
+                false
+            };
 
             for filt in 0..n_filt[w] {
                 coeffs[w][filt].read(bs, info.long_win, coef_res, max_order)?;
@@ -155,8 +162,7 @@ impl Tns {
     ) {
         let tns_max_bands = (if info.long_win {
             TNS_MAX_LONG_BANDS[rate_idx]
-        }
-        else {
+        } else {
             TNS_MAX_SHORT_BANDS[rate_idx]
         })
         .min(info.max_sfb);
@@ -186,8 +192,7 @@ impl Tns {
                             coeffs[i] -= coeffs[i - j - 1] * lpc[j];
                         }
                     }
-                }
-                else {
+                } else {
                     for (m, i) in (start..end).rev().enumerate() {
                         for j in 0..order.min(m) {
                             coeffs[i] -= coeffs[i + j + 1] * lpc[j];

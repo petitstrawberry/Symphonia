@@ -9,6 +9,7 @@ use std::cmp;
 use std::io;
 use std::io::{IoSliceMut, Read, Seek};
 use std::ops::Sub;
+use std::prelude::v1::*;
 
 use super::SeekBuffered;
 use super::{MediaSource, ReadBytes};
@@ -26,7 +27,9 @@ pub struct MediaSourceStreamOptions {
 
 impl Default for MediaSourceStreamOptions {
     fn default() -> Self {
-        MediaSourceStreamOptions { buffer_len: 64 * 1024 }
+        MediaSourceStreamOptions {
+            buffer_len: 64 * 1024,
+        }
     }
 }
 
@@ -110,8 +113,7 @@ impl<'s> MediaSourceStream<'s> {
             // slice.
             let actual_read_len = if vec0.len() >= self.read_block_len {
                 self.inner.read(&mut vec0[..self.read_block_len])?
-            }
-            else {
+            } else {
                 // Otherwise, perform a vectored read into the two contiguous region slices.
                 let rem = self.read_block_len - vec0.len();
 
@@ -158,8 +160,7 @@ impl<'s> MediaSourceStream<'s> {
     fn continguous_buf(&self) -> &[u8] {
         if self.write_pos >= self.read_pos {
             &self.ring[self.read_pos..self.write_pos]
-        }
-        else {
+        } else {
             &self.ring[self.read_pos..]
         }
     }
@@ -258,8 +259,7 @@ impl ReadBytes for MediaSourceStream<'_> {
         if buf.len() >= 2 {
             bytes.copy_from_slice(&buf[..2]);
             self.consume(2);
-        }
-        else {
+        } else {
             for byte in bytes.iter_mut() {
                 *byte = self.read_byte()?;
             }
@@ -276,8 +276,7 @@ impl ReadBytes for MediaSourceStream<'_> {
         if buf.len() >= 3 {
             bytes.copy_from_slice(&buf[..3]);
             self.consume(3);
-        }
-        else {
+        } else {
             for byte in bytes.iter_mut() {
                 *byte = self.read_byte()?;
             }
@@ -293,8 +292,7 @@ impl ReadBytes for MediaSourceStream<'_> {
         if buf.len() >= 4 {
             bytes.copy_from_slice(&buf[..4]);
             self.consume(4);
-        }
-        else {
+        } else {
             for byte in bytes.iter_mut() {
                 *byte = self.read_byte()?;
             }
@@ -309,7 +307,11 @@ impl ReadBytes for MediaSourceStream<'_> {
         // Unlike the io::Read trait, ByteStream returns an end-of-stream error when no more data
         // can be read. If a non-zero read is requested, and 0 bytes are read, return an
         // end-of-stream error.
-        if !buf.is_empty() && read == 0 { unexpected_eof_error() } else { Ok(read) }
+        if !buf.is_empty() && read == 0 {
+            unexpected_eof_error()
+        } else {
+            Ok(read)
+        }
     }
 
     fn read_buf_exact(&mut self, mut buf: &mut [u8]) -> io::Result<()> {
@@ -324,7 +326,11 @@ impl ReadBytes for MediaSourceStream<'_> {
             }
         }
 
-        if !buf.is_empty() { unexpected_eof_error() } else { Ok(()) }
+        if !buf.is_empty() {
+            unexpected_eof_error()
+        } else {
+            Ok(())
+        }
     }
 
     fn scan_bytes_aligned<'a>(
@@ -382,9 +388,11 @@ impl SeekBuffered for MediaSourceStream<'_> {
             // Get the readable regions of the current ring.
             let (vec0, vec1) = if self.write_pos >= self.read_pos {
                 (&self.ring[self.read_pos..self.write_pos], None)
-            }
-            else {
-                (&self.ring[self.read_pos..], Some(&self.ring[..self.write_pos]))
+            } else {
+                (
+                    &self.ring[self.read_pos..],
+                    Some(&self.ring[..self.write_pos]),
+                )
             };
 
             // Copy contents from the old ring into new ring.
@@ -395,8 +403,7 @@ impl SeekBuffered for MediaSourceStream<'_> {
                 let total_len = vec0_len + vec1.len();
                 new_ring[vec0_len..total_len].copy_from_slice(vec1);
                 total_len
-            }
-            else {
+            } else {
                 vec0_len
             };
 
@@ -409,8 +416,7 @@ impl SeekBuffered for MediaSourceStream<'_> {
     fn unread_buffer_len(&self) -> usize {
         if self.write_pos >= self.read_pos {
             self.write_pos - self.read_pos
-        }
-        else {
+        } else {
             self.write_pos + (self.ring.len() - self.read_pos)
         }
     }
@@ -428,13 +434,11 @@ impl SeekBuffered for MediaSourceStream<'_> {
         let delta = if pos > old_pos {
             assert!(pos - old_pos < isize::MAX as u64);
             (pos - old_pos) as isize
-        }
-        else if pos < old_pos {
+        } else if pos < old_pos {
             // Backward seek.
             assert!(old_pos - pos < isize::MAX as u64);
             -((old_pos - pos) as isize)
-        }
-        else {
+        } else {
             0
         };
 
@@ -445,8 +449,7 @@ impl SeekBuffered for MediaSourceStream<'_> {
         if delta < 0 {
             let abs_delta = cmp::min((-delta) as usize, self.read_buffer_len());
             self.read_pos = (self.read_pos + self.ring.len() - abs_delta) & self.ring_mask;
-        }
-        else if delta > 0 {
+        } else if delta > 0 {
             let abs_delta = cmp::min(delta as usize, self.unread_buffer_len());
             self.read_pos = (self.read_pos + abs_delta) & self.ring_mask;
         }
@@ -573,7 +576,10 @@ mod tests {
         mss.ignore_bytes(2).unwrap();
 
         assert_eq!(mss.read_be_f32().unwrap(), -72818055000000000000000000000.0);
-        assert_eq!(mss.read_be_f64().unwrap(), -0.000000000000011582640453292664);
+        assert_eq!(
+            mss.read_be_f64().unwrap(),
+            -0.000000000000011582640453292664
+        );
 
         assert_eq!(mss.read_be_u16().unwrap(), 32624);
         assert_eq!(mss.read_be_u24().unwrap(), 6739677);
@@ -590,7 +596,10 @@ mod tests {
 
         mss.ignore_bytes(1024).unwrap();
 
-        assert_eq!(mss.read_f32().unwrap(), -0.00000000000000000000000000048426285);
+        assert_eq!(
+            mss.read_f32().unwrap(),
+            -0.00000000000000000000000000048426285
+        );
         assert_eq!(mss.read_f64().unwrap(), -6444325820119113.0);
 
         assert_eq!(mss.read_u16().unwrap(), 36195);

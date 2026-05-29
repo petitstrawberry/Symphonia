@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use std::ops::{Bound, Range, RangeBounds};
+use std::prelude::v1::*;
 
 use crate::audio::conv::{FromSample, IntoSample};
 use crate::audio::sample::{Sample, SampleBytes};
@@ -28,14 +29,12 @@ pub fn plane_pair_by_buffer_index<S: Sample>(
             let (a, b) = planes.split_at(idx1);
 
             Some((&a[idx0][range.clone()], &b[0][range.clone()]))
-        }
-        else {
+        } else {
             let (a, b) = planes.split_at(idx0);
 
             Some((&b[0][range.clone()], &a[idx1][range.clone()]))
         }
-    }
-    else {
+    } else {
         // Either one or both plane indicies are out of range.
         None
     }
@@ -58,14 +57,12 @@ pub fn plane_pair_by_buffer_index_mut<S: Sample>(
             let (a, b) = planes.split_at_mut(idx1);
 
             Some((&mut a[idx0][range.clone()], &mut b[0][range.clone()]))
-        }
-        else {
+        } else {
             let (a, b) = planes.split_at_mut(idx0);
 
             Some((&mut b[0][range.clone()], &mut a[idx1][range.clone()]))
         }
-    }
-    else {
+    } else {
         // Either one or both plane indicies are out of range.
         None
     }
@@ -92,7 +89,9 @@ where
     // Compute start index relative to bound.
     let start = match range.start_bound() {
         Bound::Included(&start) => start,
-        Bound::Excluded(start) => start.checked_add(1).unwrap_or_else(panic_start_index_overflow),
+        Bound::Excluded(start) => start
+            .checked_add(1)
+            .unwrap_or_else(panic_start_index_overflow),
         Bound::Unbounded => 0,
     };
 
@@ -104,14 +103,24 @@ where
     };
 
     // Validate the sub-range indicies form a valid range and do not exceed the bounding range.
-    assert!(start <= end, "audio buffer slice index start {start} is beyond end {end}");
-    assert!(end <= len, "audio buffer slice end {end} index is out of range {len}");
+    assert!(
+        start <= end,
+        "audio buffer slice index start {start} is beyond end {end}"
+    );
+    assert!(
+        end <= len,
+        "audio buffer slice end {end} index is out of range {len}"
+    );
 
     // Compute the absolute start index of the sub-range in the bounding range.
-    let start = start.checked_add(bound.start).unwrap_or_else(panic_start_index_overflow);
+    let start = start
+        .checked_add(bound.start)
+        .unwrap_or_else(panic_start_index_overflow);
 
     // Compute the absolute end index of the sub-range in the bounding range.
-    let end = end.checked_add(bound.start).unwrap_or_else(panic_end_index_overflow);
+    let end = end
+        .checked_add(bound.start)
+        .unwrap_or_else(panic_end_index_overflow);
 
     Range { start, end }
 }
@@ -195,9 +204,8 @@ pub fn copy_from_slice_interleaved<Sin, Sout, Src, Dst>(
     while num_planes - i > 1 {
         let (l, r) = dst.split_at_mut(i + 1);
 
-        let dst0 = &mut l.last_mut().expect("l has i+1 elements").as_mut()[bound.clone()];
-        let dst1 =
-            &mut r.first_mut().expect("r has num_planes-i-1 elements").as_mut()[bound.clone()];
+        let dst0 = &mut l.last_mut().unwrap().as_mut()[bound.clone()];
+        let dst1 = &mut r.first_mut().unwrap().as_mut()[bound.clone()];
 
         for ((d0, d1), s) in dst0.iter_mut().zip(dst1).zip(src.chunks_exact(num_planes)) {
             *d0 = s[i + 0].into_sample();
@@ -235,7 +243,10 @@ where
     Sin: Sample,
     Sout: Sample + FromSample<Sin>,
 {
-    assert!(src.len() == dst.len(), "destination slice does not match number of samples");
+    assert!(
+        src.len() == dst.len(),
+        "destination slice does not match number of samples"
+    );
 
     for (d, s) in dst.iter_mut().zip(src) {
         *d = (*s).into_sample();
@@ -313,7 +324,11 @@ pub fn copy_bytes_planar<Sout, Sin, Src, F, Dst>(
     F: Fn(Sin) -> Sout,
     Dst: AsMut<[u8]>,
 {
-    assert!(dst.len() == src.len(), "expected {} destination slices", src.len());
+    assert!(
+        dst.len() == src.len(),
+        "expected {} destination slices",
+        src.len()
+    );
 
     for (src, dst) in src.iter().zip(dst) {
         let src = &src.as_ref()[bound.clone()];
@@ -322,7 +337,10 @@ pub fn copy_bytes_planar<Sout, Sin, Src, F, Dst>(
         let dst: &mut [Sout::RawType] = bytemuck::cast_slice_mut(dst.as_mut());
 
         // Check destination length after casting since the length could change per documentation.
-        assert!(src.len() == dst.len(), "destination slice does not match number of samples");
+        assert!(
+            src.len() == dst.len(),
+            "destination slice does not match number of samples"
+        );
 
         for (&s, d) in src.iter().zip(dst) {
             *d = f(s).to_ne_sample_bytes();

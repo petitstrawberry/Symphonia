@@ -7,6 +7,7 @@
 
 use std::convert::TryInto;
 use std::f32;
+use std::prelude::v1::*;
 
 use lazy_static::lazy_static;
 
@@ -124,7 +125,12 @@ impl Fft {
         assert_eq!(n, self.perm.len());
 
         // Bit reversal using pre-computed permutation table.
-        for (x, y) in self.perm.iter().map(|&i| x[usize::from(i)]).zip(y.iter_mut()) {
+        for (x, y) in self
+            .perm
+            .iter()
+            .map(|&i| x[usize::from(i)])
+            .zip(y.iter_mut())
+        {
             *y = x;
         }
 
@@ -173,7 +179,12 @@ impl Ifft {
         assert_eq!(n, self.perm.len());
 
         // Bit reversal using pre-computed permutation table.
-        for (x, y) in self.perm.iter().map(|&i| x[usize::from(i)]).zip(y.iter_mut()) {
+        for (x, y) in self
+            .perm
+            .iter()
+            .map(|&i| x[usize::from(i)])
+            .zip(y.iter_mut())
+        {
             *y = Complex { re: x.im, im: x.re };
         }
 
@@ -184,7 +195,10 @@ impl Ifft {
         let c = 1.0 / n as f32;
 
         for y in y.iter_mut() {
-            *y = Complex { re: c * y.im, im: c * y.re };
+            *y = Complex {
+                re: c * y.im,
+                im: c * y.re,
+            };
         }
     }
 
@@ -213,15 +227,20 @@ impl Ifft {
         let c = 1.0 / n as f32;
 
         for x in x.iter_mut() {
-            *x = Complex { re: c * x.im, im: c * x.re };
+            *x = Complex {
+                re: c * x.im,
+                im: c * x.re,
+            };
         }
     }
 }
 
 fn transform(x: &mut [Complex<f32>], n: usize) {
     fn merge(even: &mut [Complex<f32>], odd: &mut [Complex<f32>], twiddles: &[Complex<f32>]) {
-        for ((e, o), w) in
-            even.chunks_exact_mut(2).zip(odd.chunks_exact_mut(2)).zip(twiddles.chunks_exact(2))
+        for ((e, o), w) in even
+            .chunks_exact_mut(2)
+            .zip(odd.chunks_exact_mut(2))
+            .zip(twiddles.chunks_exact(2))
         {
             let p0 = e[0];
             let q0 = o[0] * w[0];
@@ -240,8 +259,7 @@ fn transform(x: &mut [Complex<f32>], n: usize) {
     if let Ok(x) = x.try_into() {
         // N is exactly 32.
         fft32(x);
-    }
-    else {
+    } else {
         // N is > 32. Therefore, N must be >= 64. Begin a breadth-first FFT over 64-point chunks
         // using 32-point halves.
         let mut step = 32;

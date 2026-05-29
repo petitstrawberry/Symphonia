@@ -14,14 +14,9 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-log = { workspace = true }
-symphonia-core = { version = "0.6.0", path = "../symphonia-core" }
-
-[dependencies.symphonia-metadata]
-version = "0.6.0"
-path = "../symphonia-metadata"
-default-features = false
-features = ["flac"]
+log = { version = "0.4", default-features = false }
+symphonia-core = { version = "0.6.0", path = "../symphonia-core", default-features = false }
+std = { package = "symphonia-std", version = "0.6.0", path = "../symphonia-std" }
 
 [lints]
 workspace = true

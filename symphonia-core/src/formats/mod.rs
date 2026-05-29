@@ -9,6 +9,7 @@
 //! demuxers.
 
 use std::fmt;
+use std::prelude::v1::*;
 
 use crate::codecs::{CodecParameters, audio, subtitle, video};
 use crate::common::FourCc;
@@ -452,7 +453,11 @@ impl MediaInfo {
     /// This function only populates the timebase, duration, and start timestamp. Other fields
     /// are defaulted and must be populated manually.
     pub fn from_track(track: &Track) -> Self {
-        MediaInfo { time_base: track.time_base, duration: track.duration, start_ts: track.start_ts }
+        MediaInfo {
+            time_base: track.time_base,
+            duration: track.duration,
+            start_ts: track.start_ts,
+        }
     }
 
     /// For media that contains multiple tracks, populates and returns `MediaInfo` using the
@@ -489,8 +494,9 @@ impl MediaInfo {
                         // Calculate the duration of the track in seconds. Saturate here because if
                         // the track is too long then skipping this track to pick a shorter one that
                         // does not saturate is more wrong.
-                        let dur_as_ts =
-                            dur.timestamp_from(Timestamp::ZERO).unwrap_or(Timestamp::MAX);
+                        let dur_as_ts = dur
+                            .timestamp_from(Timestamp::ZERO)
+                            .unwrap_or(Timestamp::MAX);
 
                         let dur_time = tb.calc_time_saturating(dur_as_ts);
 
@@ -596,24 +602,28 @@ pub trait FormatReader: Send + Sync {
     /// Get the first track of a certain track type.
     fn first_track(&self, track_type: TrackType) -> Option<&Track> {
         // Find the first track matching the desired track type.
-        self.tracks().iter().find(|track| matches_track_type(track, track_type))
+        self.tracks()
+            .iter()
+            .find(|track| matches_track_type(track, track_type))
     }
 
     /// Get the first track of a certain track type with a known (non-null) codec.
     fn first_track_known_codec(&self, track_type: TrackType) -> Option<&Track> {
         // Find the first track matching the desired track type with a known codec.
-        self.tracks().iter().find(|track| match &track.codec_params {
-            Some(CodecParameters::Audio(params)) if track_type == TrackType::Audio => {
-                params.codec != audio::CODEC_ID_NULL_AUDIO
-            }
-            Some(CodecParameters::Video(params)) if track_type == TrackType::Video => {
-                params.codec != video::CODEC_ID_NULL_VIDEO
-            }
-            Some(CodecParameters::Subtitle(params)) if track_type == TrackType::Subtitle => {
-                params.codec != subtitle::CODEC_ID_NULL_SUBTITLE
-            }
-            _ => false,
-        })
+        self.tracks()
+            .iter()
+            .find(|track| match &track.codec_params {
+                Some(CodecParameters::Audio(params)) if track_type == TrackType::Audio => {
+                    params.codec != audio::CODEC_ID_NULL_AUDIO
+                }
+                Some(CodecParameters::Video(params)) if track_type == TrackType::Video => {
+                    params.codec != video::CODEC_ID_NULL_VIDEO
+                }
+                Some(CodecParameters::Subtitle(params)) if track_type == TrackType::Subtitle => {
+                    params.codec != subtitle::CODEC_ID_NULL_SUBTITLE
+                }
+                _ => false,
+            })
     }
 
     /// Get the default track of a certain track type.
@@ -664,6 +674,8 @@ fn matches_track_type(track: &Track, track_type: TrackType) -> bool {
 pub mod util {
     //! Helper utilities for implementing `FormatReader`s.
 
+    use std::prelude::v1::*;
+
     use crate::units::Timestamp;
 
     /// A `SeekPoint` is a mapping between a sample or frame number to byte offset within a media
@@ -680,7 +692,11 @@ pub mod util {
 
     impl SeekPoint {
         fn new(frame_ts: Timestamp, byte_offset: u64, n_frames: u32) -> Self {
-            SeekPoint { frame_ts, byte_offset, n_frames }
+            SeekPoint {
+                frame_ts,
+                byte_offset,
+                n_frames,
+            }
         }
     }
 
@@ -729,15 +745,16 @@ pub mod util {
             let seek_point = SeekPoint::new(ts, byte_offset, n_frames);
 
             // Get the timestamp of the last entry in the index.
-            let (last_ts, last_offset) =
-                self.points.last().map_or((Timestamp::MIN, 0), |p| (p.frame_ts, p.byte_offset));
+            let (last_ts, last_offset) = self
+                .points
+                .last()
+                .map_or((Timestamp::MIN, 0), |p| (p.frame_ts, p.byte_offset));
 
             // If the seek point has a timestamp greater-than and byte offset greater-than or equal to
             // the last entry in the index, then simply append it to the index.
             if ts > last_ts && byte_offset >= last_offset {
                 self.points.push(seek_point)
-            }
-            else if ts < last_ts {
+            } else if ts < last_ts {
                 // If the seek point has a timestamp less-than the last entry in the index, then the
                 // insertion point must be found. This case should rarely occur.
                 let i = self
@@ -780,8 +797,7 @@ pub mod util {
 
                     if frame_ts < mid_ts {
                         upper = mid;
-                    }
-                    else {
+                    } else {
                         lower = mid;
                     }
                 }

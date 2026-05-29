@@ -11,6 +11,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use std::prelude::v1::*;
 use symphonia_core::audio::{
     AsGenericAudioBufferRef, AudioBuffer, AudioSpec, GenericAudioBufferRef,
 };
@@ -60,8 +61,7 @@ impl AacDecoder {
         let asc = if let Some(extra_data_buf) = &params.extra_data {
             validate!(extra_data_buf.len() >= 2);
             AudioSpecificConfig::read(extra_data_buf)?
-        }
-        else {
+        } else {
             // Otherwise, assume there is no ASC and use the codec parameters for ADTS.
             let mut asc = AudioSpecificConfig::default();
 
@@ -99,25 +99,38 @@ impl AacDecoder {
         // Clone and amend the codec parameters with information from the extra data.
         let mut params = params.clone();
 
-        params.with_channels(channels.clone()).with_sample_rate(asc.sample_rate);
+        params
+            .with_channels(channels.clone())
+            .with_sample_rate(asc.sample_rate);
 
         let sbinfo = GASubbandInfo::find(asc.sample_rate);
 
         let buf = AudioBuffer::new(AudioSpec::new(asc.sample_rate, channels), asc.samples);
 
-        Ok(AacDecoder { asc, pairs: Vec::new(), dsp: dsp::Dsp::new(), sbinfo, params, buf })
+        Ok(AacDecoder {
+            asc,
+            pairs: Vec::new(),
+            dsp: dsp::Dsp::new(),
+            sbinfo,
+            params,
+            buf,
+        })
     }
 
     fn set_pair(&mut self, pair_no: usize, channel: usize, pair: bool) -> Result<()> {
         if self.pairs.len() <= pair_no {
-            self.pairs.push(cpe::ChannelPair::new(pair, channel, self.sbinfo));
-        }
-        else {
+            self.pairs
+                .push(cpe::ChannelPair::new(pair, channel, self.sbinfo));
+        } else {
             validate!(self.pairs[pair_no].channel == channel);
             validate!(self.pairs[pair_no].is_pair == pair);
         }
 
-        let max_channels = self.asc.channels.as_ref().map_or(0, |channels| channels.count());
+        let max_channels = self
+            .asc
+            .channels
+            .as_ref()
+            .map_or(0, |channels| channels.count());
         validate!(if pair { channel + 1 } else { channel } < max_channels);
 
         Ok(())
@@ -254,7 +267,7 @@ impl AudioDecoder for AacDecoder {
 
     fn codec_info(&self) -> &CodecInfo {
         // Only one codec is supported.
-        &Self::supported_codecs().first().expect("at least one codec registered").info
+        &Self::supported_codecs().first().unwrap().info
     }
 
     fn codec_params(&self) -> &AudioCodecParameters {
@@ -265,8 +278,7 @@ impl AudioDecoder for AacDecoder {
         if let Err(e) = self.decode_inner(packet) {
             self.buf.clear();
             Err(e)
-        }
-        else {
+        } else {
             Ok(self.buf.as_generic_audio_buffer_ref())
         }
     }
@@ -298,7 +310,11 @@ impl RegisterableAudioDecoder for AacDecoder {
             CODEC_ID_AAC,
             "aac",
             "Advanced Audio Coding",
-            &[codec_profile!(CODEC_PROFILE_AAC_LC, "aac-lc", "Low Complexity"),]
+            &[codec_profile!(
+                CODEC_PROFILE_AAC_LC,
+                "aac-lc",
+                "Low Complexity"
+            ),]
         )]
     }
 }

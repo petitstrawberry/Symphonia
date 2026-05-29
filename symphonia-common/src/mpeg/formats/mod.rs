@@ -5,6 +5,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use std::prelude::v1::*;
 use symphonia_core::codecs::CodecId;
 use symphonia_core::errors::{Result, decode_error, unsupported_error};
 use symphonia_core::io::{FiniteStream, ReadBytes, ScopedStream};
@@ -213,18 +214,20 @@ impl ObjectDescriptor for ESDescriptor {
         scoped.ignore()?;
 
         // Decoder configuration descriptor is mandatory.
-        let Some(dec_config) = dec_config
-        else {
+        if dec_config.is_none() {
             return decode_error("common (mp4): missing decoder config descriptor");
-        };
+        }
 
         // SL descriptor is mandatory.
-        let Some(sl_config) = sl_config
-        else {
+        if sl_config.is_none() {
             return decode_error("common (mp4): missing sl config descriptor");
-        };
+        }
 
-        Ok(ESDescriptor { es_id, dec_config, sl_config })
+        Ok(ESDescriptor {
+            es_id,
+            dec_config: dec_config.unwrap(),
+            sl_config: sl_config.unwrap(),
+        })
     }
 }
 
@@ -306,7 +309,9 @@ pub struct DecoderSpecificInfo {
 
 impl ObjectDescriptor for DecoderSpecificInfo {
     fn read<B: ReadBytes>(reader: &mut B, len: u64) -> Result<Self> {
-        Ok(DecoderSpecificInfo { extra_data: reader.read_boxed_slice_exact(len as usize)? })
+        Ok(DecoderSpecificInfo {
+            extra_data: reader.read_boxed_slice_exact(len as usize)?,
+        })
     }
 }
 
