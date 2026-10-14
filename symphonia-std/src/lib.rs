@@ -3,6 +3,12 @@
 
 extern crate alloc;
 
+#[cfg(feature = "std")]
+extern crate std as native_std;
+
+#[cfg(feature = "std")]
+pub use native_std::{collections, fs, io};
+
 pub use core::{
     cmp, convert, default, error, f32, f64, fmt, hash, i8, i16, i32, i64, marker, mem, num, ops,
     result, str, u8, u16, u32, u64,
@@ -12,10 +18,12 @@ pub mod borrow {
     pub use alloc::borrow::{Cow, ToOwned};
 }
 
+#[cfg(not(feature = "std"))]
 pub mod collections {
     pub use alloc::collections::{BTreeMap, BTreeMap as HashMap, VecDeque};
 }
 
+#[cfg(not(feature = "std"))]
 pub mod fs {
     use super::io;
 
@@ -55,6 +63,7 @@ pub mod fs {
     }
 }
 
+#[cfg(not(feature = "std"))]
 pub mod io {
     use core::fmt;
     use core::ops::{Deref, DerefMut};

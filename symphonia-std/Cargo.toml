@@ -12,6 +12,11 @@ repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
 
+[features]
+default = []
+# Opt in to native std I/O for standard-library format readers.
+std = []
+
 [dependencies]
 libm = "0.2"
 
