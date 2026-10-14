@@ -236,6 +236,8 @@ pub mod io {
 }
 
 pub mod prelude {
+    #[cfg(feature = "std")]
+    pub use native_std::prelude::rust_2024;
     pub mod v1 {
         pub use alloc::boxed::Box;
         pub use alloc::borrow::ToOwned;
