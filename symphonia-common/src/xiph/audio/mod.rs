@@ -15,3 +15,5 @@
 use std::prelude::v1::*;
 pub mod flac;
 pub mod vorbis;
+#[cfg(feature = "std")]
+pub mod opus;
