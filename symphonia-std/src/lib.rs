@@ -8,6 +8,8 @@ extern crate std as native_std;
 
 #[cfg(feature = "std")]
 pub use native_std::{fs, io};
+#[cfg(feature = "std")]
+pub use core::{debug_assert, unreachable, write};
 
 pub use core::{
     cmp, convert, default, error, f32, f64, fmt, hash, i8, i16, i32, i64, marker, mem, num, ops,
