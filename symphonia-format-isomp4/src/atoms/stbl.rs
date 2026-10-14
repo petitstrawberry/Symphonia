@@ -6,8 +6,8 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::atoms::{
-    Atom, AtomHeader, AtomIterator, AtomType, Co64Atom, ReadAtom, Result, StcoAtom, StscAtom,
-    StsdAtom, StszAtom, SttsAtom, decode_error,
+    Atom, AtomHeader, AtomIterator, AtomType, Co64Atom, CttsAtom, ReadAtom, Result, StcoAtom,
+    StscAtom, StsdAtom, StszAtom, SttsAtom, decode_error,
 };
 
 use log::{debug, warn};
@@ -18,6 +18,7 @@ use log::{debug, warn};
 pub struct StblAtom {
     pub stsd: StsdAtom,
     pub stts: SttsAtom,
+    pub ctts: Option<CttsAtom>,
     pub stsc: StscAtom,
     pub stsz: StszAtom,
     pub stco: Option<StcoAtom>,
@@ -28,6 +29,7 @@ impl Atom for StblAtom {
     fn read<R: ReadAtom>(it: &mut AtomIterator<R>, _header: &AtomHeader) -> Result<Self> {
         let mut stsd = None;
         let mut stts = None;
+        let mut ctts = None;
         let mut stsc = None;
         let mut stsz = None;
         let mut stco = None;
@@ -42,8 +44,7 @@ impl Atom for StblAtom {
                     stts = Some(it.read_atom::<SttsAtom>()?);
                 }
                 AtomType::CompositionTimeToSample => {
-                    // Composition time to sample atom is only required for video.
-                    debug!("ignoring ctts atom.");
+                    ctts = Some(it.read_atom::<CttsAtom>()?);
                 }
                 AtomType::SyncSample => {
                     // Sync sample atom is only required for video.
@@ -70,23 +71,27 @@ impl Atom for StblAtom {
             warn!("missing stco or co64 atom");
         }
 
-        let Some(stsd) = stsd
-        else {
+        let Some(stsd) = stsd else {
             return decode_error("isomp4 (stbl): missing stsd atom");
         };
-        let Some(stts) = stts
-        else {
+        let Some(stts) = stts else {
             return decode_error("isomp4 (stbl): missing stts atom");
         };
-        let Some(stsc) = stsc
-        else {
+        let Some(stsc) = stsc else {
             return decode_error("isomp4 (stbl): missing stsc atom");
         };
-        let Some(stsz) = stsz
-        else {
+        let Some(stsz) = stsz else {
             return decode_error("isomp4 (stbl): missing stsz atom");
         };
 
-        Ok(StblAtom { stsd, stts, stsc, stsz, stco, co64 })
+        Ok(StblAtom {
+            stsd,
+            stts,
+            ctts,
+            stsc,
+            stsz,
+            stco,
+            co64,
+        })
     }
 }

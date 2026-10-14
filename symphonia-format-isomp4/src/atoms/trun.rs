@@ -27,6 +27,7 @@ pub struct TrunAtom {
     pub sample_size: Vec<u32>,
     /// Sample flags for each sample in this run.
     pub sample_flags: Vec<u32>,
+    pub sample_composition_offsets: Vec<i64>,
     /// The total size of all samples in this run. 0 if the sample size flag is not set.
     total_sample_size: u64,
     /// The total duration of all samples in this run. 0 if the sample duration flag is not set.
@@ -84,15 +85,13 @@ impl TrunAtom {
     pub fn total_duration(&self, default_dur: u32) -> u64 {
         if self.is_sample_duration_present() {
             self.total_sample_duration
-        }
-        else {
+        } else {
             // The duration of all samples in the track fragment are not explictly known.
             if self.sample_count > 0 && self.is_first_sample_duration_present() {
                 // The first sample has an explictly recorded duration.
                 u64::from(self.sample_duration[0])
                     + u64::from(self.sample_count - 1) * u64::from(default_dur)
-            }
-            else {
+            } else {
                 // All samples have the default duration.
                 u64::from(self.sample_count) * u64::from(default_dur)
             }
@@ -103,12 +102,10 @@ impl TrunAtom {
     pub fn total_size(&self, default_size: u32) -> u64 {
         if self.is_sample_size_present() {
             self.total_sample_size
-        }
-        else if self.sample_count > 0 && self.is_first_sample_size_present() {
+        } else if self.sample_count > 0 && self.is_first_sample_size_present() {
             u64::from(self.sample_size[0])
                 + u64::from(self.sample_count - 1) * u64::from(default_size)
-        }
-        else {
+        } else {
             u64::from(self.sample_count) * u64::from(default_size)
         }
     }
@@ -125,23 +122,20 @@ impl TrunAtom {
                     .iter()
                     .map(|&s| u64::from(s))
                     .sum::<u64>()
-            }
-            else {
+            } else {
                 0
             };
 
             let dur = self.sample_duration[sample_num_rel as usize];
 
             (ts, dur)
-        }
-        else {
+        } else {
             // The duration of all samples in the track fragment are not unique.
             let ts = if sample_num_rel > 0 && self.is_first_sample_duration_present() {
                 // The first sample has a unique duration.
                 u64::from(self.sample_duration[0])
                     + u64::from(sample_num_rel - 1) * u64::from(default_dur)
-            }
-            else {
+            } else {
                 // Zero or more samples with identical durations.
                 u64::from(sample_num_rel) * u64::from(default_dur)
             };
@@ -157,11 +151,9 @@ impl TrunAtom {
 
         if self.is_sample_size_present() {
             self.sample_size[sample_num_rel as usize]
-        }
-        else if sample_num_rel == 0 && self.is_first_sample_size_present() {
+        } else if sample_num_rel == 0 && self.is_first_sample_size_present() {
             self.sample_size[0]
-        }
-        else {
+        } else {
             default_size
         }
     }
@@ -178,21 +170,18 @@ impl TrunAtom {
                     .iter()
                     .map(|&s| u64::from(s))
                     .sum::<u64>()
-            }
-            else {
+            } else {
                 0
             };
 
             (offset, self.sample_size[sample_num_rel as usize])
-        }
-        else {
+        } else {
             // The size of all samples in the track are not unique.
             let offset = if sample_num_rel > 0 && self.is_first_sample_size_present() {
                 // The first sample has a unique size.
                 u64::from(self.sample_size[0])
                     + u64::from(sample_num_rel - 1) * u64::from(default_size)
-            }
-            else {
+            } else {
                 // Zero or more identically sized samples.
                 u64::from(sample_num_rel) * u64::from(default_size)
             };
@@ -217,8 +206,7 @@ impl TrunAtom {
                 ts_delta -= u64::from(dur);
                 sample_num += 1;
             }
-        }
-        else {
+        } else {
             if self.sample_count > 0 && self.is_first_sample_duration_present() {
                 // The first sample duration is unique.
                 let first_sample_dur = u64::from(self.sample_duration[0]);
@@ -226,8 +214,7 @@ impl TrunAtom {
                 if ts_delta >= first_sample_dur {
                     ts_delta -= first_sample_dur;
                     sample_num += 1;
-                }
-                else {
+                } else {
                     ts_delta -= ts_delta;
                 }
             }
@@ -241,7 +228,10 @@ impl TrunAtom {
 
 impl Atom for TrunAtom {
     fn read<R: ReadAtom>(it: &mut AtomIterator<R>, _header: &AtomHeader) -> Result<Self> {
-        let (_, flags) = it.read_extended_header()?;
+        let (version, flags) = it.read_extended_header()?;
+        if version > 1 {
+            return decode_error("isomp4 (trun): invalid version");
+        }
 
         let sample_count = it.read_u32()?;
 
@@ -267,6 +257,7 @@ impl Atom for TrunAtom {
         let mut sample_duration = Vec::new();
         let mut sample_size = Vec::new();
         let mut sample_flags = Vec::new();
+        let mut sample_composition_offsets = Vec::new();
 
         let mut total_sample_size = 0;
         let mut total_sample_duration = 0;
@@ -292,7 +283,12 @@ impl Atom for TrunAtom {
             if (flags & TrunAtom::SAMPLE_COMPOSITION_TIME_OFFSETS_PRESENT) != 0 {
                 // For version 0, this is a u32.
                 // For version 1, this is a i32.
-                let _ = it.read_u32()?;
+                let raw = it.read_u32()?;
+                sample_composition_offsets.push(if version == 1 {
+                    i64::from(raw as i32)
+                } else {
+                    i64::from(raw)
+                });
             }
         }
 
@@ -304,6 +300,7 @@ impl Atom for TrunAtom {
             sample_duration,
             sample_size,
             sample_flags,
+            sample_composition_offsets,
             total_sample_size,
             total_sample_duration,
         })

@@ -6,7 +6,8 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::atoms::{
-    Atom, AtomHeader, AtomIterator, AtomType, ReadAtom, Result, TfhdAtom, TrunAtom, decode_error,
+    Atom, AtomHeader, AtomIterator, AtomType, ReadAtom, Result, TfdtAtom, TfhdAtom, TrunAtom,
+    decode_error,
 };
 
 /// Track fragment atom.
@@ -15,6 +16,7 @@ use crate::atoms::{
 pub struct TrafAtom {
     /// Track fragment header.
     pub tfhd: TfhdAtom,
+    pub tfdt: Option<TfdtAtom>,
     /// Track fragment sample runs.
     pub truns: Vec<TrunAtom>,
     /// The total number of samples in this track fragment.
@@ -24,6 +26,7 @@ pub struct TrafAtom {
 impl Atom for TrafAtom {
     fn read<R: ReadAtom>(it: &mut AtomIterator<R>, _header: &AtomHeader) -> Result<Self> {
         let mut tfhd = None;
+        let mut tfdt = None;
         let mut truns = Vec::new();
 
         let mut total_sample_count = 0;
@@ -32,6 +35,9 @@ impl Atom for TrafAtom {
             match header.atom_type {
                 AtomType::TrackFragmentHeader => {
                     tfhd = Some(it.read_atom::<TfhdAtom>()?);
+                }
+                AtomType::TrackFragmentDecodeTime => {
+                    tfdt = Some(it.read_atom::<TfdtAtom>()?);
                 }
                 AtomType::TrackFragmentRun => {
                     let trun = it.read_atom::<TrunAtom>()?;
@@ -46,11 +52,15 @@ impl Atom for TrafAtom {
         }
 
         // Tfhd is mandatory.
-        let Some(tfhd) = tfhd
-        else {
+        let Some(tfhd) = tfhd else {
             return decode_error("isomp4 (traf): missing tfhd atom");
         };
 
-        Ok(TrafAtom { tfhd, truns, total_sample_count })
+        Ok(TrafAtom {
+            tfhd,
+            tfdt,
+            truns,
+            total_sample_count,
+        })
     }
 }
