@@ -5,7 +5,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::comparison_chain)]
 #![allow(clippy::excessive_precision)]
 #![allow(clippy::identity_op)]
@@ -19,3 +19,8 @@ extern crate alloc;
 // justification.
 
 pub mod mpeg;
+
+#[cfg(feature = "std")]
+pub mod apple;
+#[cfg(feature = "std")]
+pub mod xiph;

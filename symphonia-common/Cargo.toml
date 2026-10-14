@@ -13,6 +13,10 @@ repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
 
+[features]
+default = []
+std = ["std/std"]
+
 [dependencies]
 log = { version = "0.4", default-features = false }
 symphonia-core = { version = "0.6.0", path = "../symphonia-core", default-features = false }
