@@ -17,5 +17,6 @@ mod atoms;
 mod demuxer;
 mod fp;
 mod stream;
+mod timeline;
 
 pub use demuxer::IsoMp4Reader;
