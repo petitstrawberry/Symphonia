@@ -32,6 +32,7 @@ use crate::atoms::{
     EsdsAtom, FlacAtom, HvcCAtom, OpusAtom, ReadAtom, Result, WaveAtom, decode_error,
     unsupported_error,
 };
+use crate::cenc::{ProtectionInfo, TrackEncryption};
 use crate::fp::FpU16;
 
 /// Sample description atom.
@@ -39,7 +40,7 @@ use crate::fp::FpU16;
 #[derive(Debug)]
 pub struct StsdAtom {
     /// Sample entry.
-    sample_entry: SampleEntry,
+    sample_entries: Vec<SampleEntry>,
 }
 
 impl Atom for StsdAtom {
@@ -52,71 +53,120 @@ impl Atom for StsdAtom {
             return decode_error("isomp4 (stsd): missing sample entry");
         }
 
-        if num_entries > 1 {
-            return unsupported_error("isomp4 (stsd): more than 1 sample entry");
+        if num_entries > 16 {
+            return unsupported_error("isomp4 (stsd): too many sample entries");
         }
 
-        // Read exactly one sample entry atom.
-        let header = match it.next_header()? {
-            Some(header) => header,
-            _ => return decode_error("isomp4 (stsd): missing expected sample entry"),
-        };
+        let mut sample_entries = Vec::new();
+        for _ in 0..num_entries {
+            // Read a bounded sample entry atom.
+            let header = match it.next_header()? {
+                Some(header) => header,
+                _ => return decode_error("isomp4 (stsd): missing expected sample entry"),
+            };
 
-        let sample_entry = match header.atom_type() {
-            AtomType::AudioSampleEntryMp4a
-            | AtomType::AudioSampleEntryAlac
-            | AtomType::AudioSampleEntryAc3
-            | AtomType::AudioSampleEntryEc3
-            | AtomType::AudioSampleEntryFlac
-            | AtomType::AudioSampleEntryOpus
-            | AtomType::AudioSampleEntryMp3
-            | AtomType::AudioSampleEntryLpcm
-            | AtomType::AudioSampleEntryQtWave
-            | AtomType::AudioSampleEntryALaw
-            | AtomType::AudioSampleEntryMuLaw
-            | AtomType::AudioSampleEntryU8
-            | AtomType::AudioSampleEntryS16Le
-            | AtomType::AudioSampleEntryS16Be
-            | AtomType::AudioSampleEntryS24
-            | AtomType::AudioSampleEntryS32
-            | AtomType::AudioSampleEntryF32
-            | AtomType::AudioSampleEntryF64 => {
-                let entry = it.read_atom::<AudioSampleEntry>()?;
-                SampleEntry::Audio(entry)
-            }
-            AtomType::VisualSampleEntryAv1
-            | AtomType::VisualSampleEntryAvc1
-            | AtomType::VisualSampleEntryDvh1
-            | AtomType::VisualSampleEntryDvhe
-            | AtomType::VisualSampleEntryHev1
-            | AtomType::VisualSampleEntryHvc1
-            | AtomType::VisualSampleEntryMp4v
-            | AtomType::VisualSampleEntryVp8
-            | AtomType::VisualSampleEntryVp9 => {
-                let entry = it.read_atom::<VisualSampleEntry>()?;
-                SampleEntry::Visual(entry)
-            }
-            AtomType::SubtitleSampleEntryText
-            | AtomType::SubtitleSampleEntryTimedText
-            | AtomType::SubtitleSampleEntryXml => {
-                let entry = it.read_atom::<SubtitleSampleEntry>()?;
-                SampleEntry::Subtitle(entry)
-            }
-            _ => {
-                // Potentially subtitles, metadata, hints, etc.
-                SampleEntry::Other
-            }
-        };
+            let sample_entry = match header.atom_type() {
+                AtomType::AudioSampleEntryMp4a
+                | AtomType::Other([b'e', b'n', b'c', b'a'])
+                | AtomType::AudioSampleEntryAlac
+                | AtomType::AudioSampleEntryAc3
+                | AtomType::AudioSampleEntryEc3
+                | AtomType::AudioSampleEntryFlac
+                | AtomType::AudioSampleEntryOpus
+                | AtomType::AudioSampleEntryMp3
+                | AtomType::AudioSampleEntryLpcm
+                | AtomType::AudioSampleEntryQtWave
+                | AtomType::AudioSampleEntryALaw
+                | AtomType::AudioSampleEntryMuLaw
+                | AtomType::AudioSampleEntryU8
+                | AtomType::AudioSampleEntryS16Le
+                | AtomType::AudioSampleEntryS16Be
+                | AtomType::AudioSampleEntryS24
+                | AtomType::AudioSampleEntryS32
+                | AtomType::AudioSampleEntryF32
+                | AtomType::AudioSampleEntryF64 => {
+                    let entry = it.read_atom::<AudioSampleEntry>()?;
+                    SampleEntry::Audio(entry)
+                }
+                AtomType::VisualSampleEntryAv1
+                | AtomType::Other([b'e', b'n', b'c', b'v'])
+                | AtomType::VisualSampleEntryAvc1
+                | AtomType::VisualSampleEntryDvh1
+                | AtomType::VisualSampleEntryDvhe
+                | AtomType::VisualSampleEntryHev1
+                | AtomType::VisualSampleEntryHvc1
+                | AtomType::VisualSampleEntryMp4v
+                | AtomType::VisualSampleEntryVp8
+                | AtomType::VisualSampleEntryVp9 => {
+                    let entry = it.read_atom::<VisualSampleEntry>()?;
+                    SampleEntry::Visual(entry)
+                }
+                AtomType::SubtitleSampleEntryText
+                | AtomType::SubtitleSampleEntryTimedText
+                | AtomType::SubtitleSampleEntryXml => {
+                    let entry = it.read_atom::<SubtitleSampleEntry>()?;
+                    SampleEntry::Subtitle(entry)
+                }
+                _ => {
+                    // Potentially subtitles, metadata, hints, etc.
+                    SampleEntry::Other
+                }
+            };
 
-        Ok(StsdAtom { sample_entry })
+            sample_entries.push(sample_entry);
+        }
+        let atom = StsdAtom { sample_entries };
+        if !atom.compatible_entries() {
+            return unsupported_error("isomp4: changing sample entry codec configuration");
+        }
+        Ok(atom)
     }
 }
 
 impl StsdAtom {
+    pub(crate) fn encryption(&self, index: u32) -> Result<Option<&TrackEncryption>> {
+        let entry = index.checked_sub(1).and_then(|i| self.sample_entries.get(i as usize)).ok_or(
+            symphonia_core::errors::Error::DecodeError("isomp4: invalid sample description index"),
+        )?;
+        Ok(match entry {
+            SampleEntry::Audio(entry) => entry.encryption.as_ref(),
+            SampleEntry::Visual(entry) => entry.encryption.as_ref(),
+            _ => None,
+        })
+    }
+    pub(crate) fn has_protected_entry(&self) -> bool {
+        self.sample_entries.iter().any(|entry| match entry {
+            SampleEntry::Audio(entry) => entry.encryption.as_ref().is_some_and(|e| e.protected),
+            SampleEntry::Visual(entry) => entry.encryption.as_ref().is_some_and(|e| e.protected),
+            _ => false,
+        })
+    }
+    fn compatible_entries(&self) -> bool {
+        self.sample_entries.iter().skip(1).all(|entry| match (&self.sample_entries[0], entry) {
+            (SampleEntry::Audio(a), SampleEntry::Audio(b)) => {
+                a.codec_id == b.codec_id
+                    && a.extra_data == b.extra_data
+                    && a.num_channels == b.num_channels
+                    && a.sample_rate == b.sample_rate
+            }
+            (SampleEntry::Visual(a), SampleEntry::Visual(b)) => {
+                a.codec_id == b.codec_id
+                    && a.width == b.width
+                    && a.height == b.height
+                    && a.extra_data.len() == b.extra_data.len()
+                    && a.extra_data
+                        .iter()
+                        .zip(&b.extra_data)
+                        .all(|(a, b)| a.id == b.id && a.data == b.data)
+            }
+            (SampleEntry::Other, SampleEntry::Other) => true,
+            _ => false,
+        })
+    }
     /// Fill the provided `CodecParameters` using the sample entry.
     pub fn make_codec_params(&self) -> Option<CodecParameters> {
         // Audio sample entry.
-        match &self.sample_entry {
+        match &self.sample_entries[0] {
             SampleEntry::Audio(entry) => Some(CodecParameters::Audio(entry.make_codec_params())),
             SampleEntry::Visual(entry) => Some(CodecParameters::Video(entry.make_codec_params())),
             SampleEntry::Subtitle(entry) => {
@@ -140,6 +190,7 @@ pub enum SampleEntry {
 /// Audio sample entry.
 #[derive(Debug, Default)]
 pub struct AudioSampleEntry {
+    pub(crate) encryption: Option<TrackEncryption>,
     pub num_channels: u32,
     pub sample_size: u16,
     pub sample_rate: f64,
@@ -300,6 +351,12 @@ impl Atom for AudioSampleEntry {
 
         while let Some(entry_header) = it.next_header()? {
             match entry_header.atom_type {
+                AtomType::Other(kind) if &kind == b"sinf" => {
+                    if entry.encryption.is_some() {
+                        return decode_error("isomp4: duplicate sinf");
+                    }
+                    entry.encryption = Some(it.read_atom::<ProtectionInfo>()?.0);
+                }
                 AtomType::Esds => {
                     let atom = it.read_atom::<EsdsAtom>()?;
                     atom.fill_audio_sample_entry(&mut entry)?;
@@ -341,6 +398,11 @@ impl Atom for AudioSampleEntry {
             entry.codec_id = CODEC_ID_MP3;
         }
 
+        if matches!(header.atom_type, AtomType::Other(kind) if &kind == b"enca" || &kind == b"encv")
+            && entry.encryption.is_none()
+        {
+            return decode_error("isomp4: protected sample entry missing sinf");
+        }
         Ok(entry)
     }
 }
@@ -462,6 +524,7 @@ fn lpcm_channels(num_channels: u32) -> Result<Channels> {
 #[allow(dead_code)]
 #[derive(Debug, Default)]
 pub struct VisualSampleEntry {
+    pub(crate) encryption: Option<TrackEncryption>,
     pub width: u16,
     pub height: u16,
     pub horiz_res: f64,
@@ -497,7 +560,7 @@ impl VisualSampleEntry {
 }
 
 impl Atom for VisualSampleEntry {
-    fn read<R: ReadAtom>(it: &mut AtomIterator<R>, _header: &AtomHeader) -> Result<Self> {
+    fn read<R: ReadAtom>(it: &mut AtomIterator<R>, header: &AtomHeader) -> Result<Self> {
         // SampleEntry portion
 
         // Reserved. All 0.
@@ -547,6 +610,12 @@ impl Atom for VisualSampleEntry {
 
         while let Some(entry_header) = it.next_header()? {
             match entry_header.atom_type {
+                AtomType::Other(kind) if &kind == b"sinf" => {
+                    if entry.encryption.is_some() {
+                        return decode_error("isomp4: duplicate sinf");
+                    }
+                    entry.encryption = Some(it.read_atom::<ProtectionInfo>()?.0);
+                }
                 AtomType::Esds => {
                     let atom = it.read_atom::<EsdsAtom>()?;
                     atom.fill_video_sample_entry(&mut entry)?;
@@ -569,6 +638,11 @@ impl Atom for VisualSampleEntry {
             }
         }
 
+        if matches!(header.atom_type, AtomType::Other(kind) if &kind == b"enca" || &kind == b"encv")
+            && entry.encryption.is_none()
+        {
+            return decode_error("isomp4: protected sample entry missing sinf");
+        }
         Ok(entry)
     }
 }

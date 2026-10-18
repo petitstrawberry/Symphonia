@@ -14,6 +14,7 @@ use crate::atoms::{
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct TrafAtom {
+    pub senc: Option<Box<[u8]>>,
     /// Track fragment header.
     pub tfhd: TfhdAtom,
     pub tfdt: Option<TfdtAtom>,
@@ -26,6 +27,7 @@ pub struct TrafAtom {
 impl Atom for TrafAtom {
     fn read<R: ReadAtom>(it: &mut AtomIterator<R>, _header: &AtomHeader) -> Result<Self> {
         let mut tfhd = None;
+        let mut senc = None;
         let mut tfdt = None;
         let mut truns = Vec::new();
 
@@ -33,6 +35,20 @@ impl Atom for TrafAtom {
 
         while let Some(header) = it.next_header()? {
             match header.atom_type {
+                AtomType::Other(kind) if &kind == b"senc" => {
+                    if senc.is_some() {
+                        return decode_error("isomp4: duplicate senc");
+                    }
+                    senc = Some(it.read_atom::<crate::cenc::EncryptionData>()?.0);
+                }
+                AtomType::Other(kind) if &kind == b"sgpd" || &kind == b"sbgp" => {
+                    let data = it.read_atom::<crate::cenc::EncryptionData>()?.0;
+                    if data.get(4..8) == Some(b"seig") {
+                        return crate::atoms::unsupported_error(
+                            "isomp4: seig key overrides are unsupported",
+                        );
+                    }
+                }
                 AtomType::TrackFragmentHeader => {
                     tfhd = Some(it.read_atom::<TfhdAtom>()?);
                 }
@@ -52,15 +68,11 @@ impl Atom for TrafAtom {
         }
 
         // Tfhd is mandatory.
-        let Some(tfhd) = tfhd else {
+        let Some(tfhd) = tfhd
+        else {
             return decode_error("isomp4 (traf): missing tfhd atom");
         };
 
-        Ok(TrafAtom {
-            tfhd,
-            tfdt,
-            truns,
-            total_sample_count,
-        })
+        Ok(TrafAtom { senc, tfhd, tfdt, truns, total_sample_count })
     }
 }

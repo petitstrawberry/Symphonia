@@ -18,6 +18,7 @@ use log::warn;
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct MoovAtom {
+    pub protection_headers: Vec<Box<[u8]>>,
     /// Movie header atom.
     pub mvhd: MvhdAtom,
     /// Trak atoms.
@@ -43,12 +44,21 @@ impl MoovAtom {
 impl Atom for MoovAtom {
     fn read<R: ReadAtom>(it: &mut AtomIterator<R>, _header: &AtomHeader) -> Result<Self> {
         let mut mvhd = None;
+        let mut protection_headers = Vec::new();
         let mut traks = Vec::new();
         let mut mvex = None;
         let mut udta = None;
 
         while let Some(header) = it.next_header()? {
             match header.atom_type {
+                AtomType::Other(kind) if &kind == b"pssh" => {
+                    let data = it.read_atom::<crate::cenc::EncryptionData>()?.0;
+                    let mut atom = Vec::new();
+                    atom.extend_from_slice(&((data.len() + 8) as u32).to_be_bytes());
+                    atom.extend_from_slice(b"pssh");
+                    atom.extend_from_slice(&data);
+                    protection_headers.push(atom.into_boxed_slice());
+                }
                 AtomType::MovieHeader => {
                     mvhd = Some(it.read_atom::<MvhdAtom>()?);
                 }
@@ -83,6 +93,6 @@ impl Atom for MoovAtom {
             }
         }
 
-        Ok(MoovAtom { mvhd, traks, mvex, udta })
+        Ok(MoovAtom { protection_headers, mvhd, traks, mvex, udta })
     }
 }

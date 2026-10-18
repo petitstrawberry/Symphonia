@@ -147,6 +147,8 @@ impl TimeSpan {
 ///
 /// `IsoMp4Reader` implements a demuxer for the ISO Base Media File Format.
 pub struct IsoMp4Reader<'s> {
+    packet_encryption: Option<crate::cenc::SampleEncryption>,
+    packet_is_sync: bool,
     iter: AtomIterator<MediaSourceStream<'s>>,
     media_info: MediaInfo,
     tracks: Vec<Track>,
@@ -160,6 +162,19 @@ pub struct IsoMp4Reader<'s> {
 }
 
 impl<'s> IsoMp4Reader<'s> {
+    pub fn packet_is_sync(&self) -> bool {
+        self.packet_is_sync
+    }
+    /// Encryption of the last packet returned by `next_packet`. The caller must
+    /// decrypt before inspecting codec payloads or submitting to a decoder.
+    pub fn packet_encryption(&self) -> Option<&crate::cenc::SampleEncryption> {
+        self.packet_encryption.as_ref()
+    }
+    /// Full PSSH boxes from the movie initialization, for EME cenc init data.
+    pub fn protection_headers(&self) -> &[Box<[u8]>] {
+        &self.moov.protection_headers
+    }
+
     pub fn try_new(mut mss: MediaSourceStream<'s>, opts: FormatOptions) -> Result<Self> {
         // To get to beginning of the atom.
         mss.seek_buffered_rel(-4);
@@ -301,6 +316,12 @@ impl<'s> IsoMp4Reader<'s> {
         }
 
         // Create a track and track state for each Track (trak) atom.
+        if !moov.is_fragmented()
+            && moov.traks.iter().any(|track| track.mdia.minf.stbl.stsd.has_protected_entry())
+        {
+            return unsupported_error("isomp4: encrypted non-fragmented samples are unsupported");
+        }
+
         let mut tracks = Vec::with_capacity(moov.traks.len());
         let mut track_states = Vec::with_capacity(moov.traks.len());
 
@@ -353,7 +374,17 @@ impl<'s> IsoMp4Reader<'s> {
         media_info.with_time_base(TimeBase::from_recip(moov.mvhd.timescale));
         media_info.with_duration(Duration::new(moov.mvhd.duration));
 
-        Ok(IsoMp4Reader { iter: it, media_info, tracks, metadata, track_states, segs, moov })
+        Ok(IsoMp4Reader {
+            packet_encryption: None,
+            packet_is_sync: false,
+            iter: it,
+            media_info,
+            tracks,
+            metadata,
+            track_states,
+            segs,
+            moov,
+        })
     }
 
     /// Idempotently gets information regarding the next sample of the media stream. This function
@@ -488,7 +519,7 @@ impl<'s> IsoMp4Reader<'s> {
                             self.segs.last().expect("always at least one segment from moov atom");
 
                         // Create a new segment for the moof atom.
-                        let seg = MoofSegment::new(moof, self.moov.clone(), last_seg.as_ref());
+                        let seg = MoofSegment::new(moof, self.moov.clone(), last_seg.as_ref())?;
 
                         // Segments should have a monotonic sequence number.
                         if seg.sequence_num() <= last_seg.sequence_num() {
@@ -690,6 +721,15 @@ impl FormatReader for IsoMp4Reader<'_> {
             }
         };
 
+        self.packet_is_sync = self.segs[next_sample_info.seg_idx].sample_is_sync(
+            next_sample_info.track_num,
+            self.track_states[next_sample_info.track_num].next_sample,
+        );
+        self.packet_encryption = self.segs[next_sample_info.seg_idx].sample_encryption(
+            next_sample_info.track_num,
+            self.track_states[next_sample_info.track_num].next_sample,
+        )?;
+
         // Get the position and length information of the next sample.
         let sample_info = match self.consume_next_sample(&next_sample_info)? {
             Some(s) => s,
@@ -698,6 +738,17 @@ impl FormatReader for IsoMp4Reader<'_> {
 
         let data =
             self.iter.read_raw_boxed_slice_exact(sample_info.pos, sample_info.len as usize)?;
+
+        if let Some(encryption) = &self.packet_encryption {
+            if !encryption.subsamples.is_empty() {
+                let total = encryption.subsamples.iter().try_fold(0u64, |sum, sub| {
+                    sum.checked_add(u64::from(sub.clear_bytes) + u64::from(sub.encrypted_bytes))
+                });
+                if total != Some(data.len() as u64) {
+                    return decode_error("isomp4: encryption map does not cover sample");
+                }
+            }
+        }
 
         let pts = next_sample_info
             .ts

@@ -14,6 +14,7 @@
 #![allow(clippy::manual_range_contains)]
 
 mod atoms;
+pub mod cenc;
 mod demuxer;
 mod fp;
 mod stream;
